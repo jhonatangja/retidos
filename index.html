@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Operacional J&T - V32 (Auto-Detect)</title>
+    
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root { --primary: #d9534f; --secondary: #0275d8; --bg: #f8f9fa; --text: #333; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 50px; }
+
+        header { background: linear-gradient(135deg, #b92b27, #1565C0); color: white; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        header h1 { font-size: 22px; display: flex; align-items: center; gap: 10px; }
+        
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        /* ABAS */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .tab-btn { background: none; border: none; padding: 10px 20px; font-weight: bold; color: #777; cursor: pointer; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: var(--secondary); border-bottom-color: var(--secondary); }
+        .view-section { display: none; } .view-section.active { display: block; }
+
+        /* UPLOAD */
+        .card-upload { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; }
+        .input-group { flex: 1; min-width: 200px; }
+        .input-group label { display: block; font-weight: 700; margin-bottom: 8px; color: #555; font-size: 13px; }
+        .btn-main { background: var(--secondary); color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        /* MENSAGEM ERRO/DEBUG */
+        #msgErro { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 15px; border-radius: 6px; margin-bottom: 20px; display: none; white-space: pre-wrap; font-family: monospace; font-size: 12px; }
+
+        /* KPIs & GRID */
+        .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .kpi-card { background: white; padding: 15px; border-radius: 6px; border-left: 5px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .kpi-card h3 { font-size: 10px; text-transform: uppercase; color: #777; font-weight: 700; margin-bottom: 5px; }
+        .kpi-card .value { font-size: 22px; font-weight: 800; color: #333; }
+        
+        .main-grid { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+        @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+        
+        .ranking-card { background: white; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+        .table-container { background: white; border-radius: 8px; overflow-x: auto; padding: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 800px; }
+        th { background: #f1f3f5; padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6; cursor: pointer; }
+        td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+        
+        /* FILTROS */
+        .filters-bar { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .filter-item input, .filter-item select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+
+        /* UTILS */
+        .badge { padding: 4px 8px; border-radius: 4px; color: white; font-weight: bold; font-size: 10px; }
+        .hidden { display: none !important; }
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--secondary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* CORES */
+        .status-apto { background-color: #28a745; } 
+        .status-jt { background-color: #6f42c1; } 
+        .status-verify { background-color: #fd7e14; } 
+        .status-wait { background-color: #d9534f; }
+        .status-ausencia-proc { background-color: #17a2b8; } 
+        .status-ausencia-plus { background-color: #c69500; color: white; } 
+        .status-driver { background-color: #343a40; }
+        .status-done { background-color: #28a745; }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay" class="hidden">
+        <div class="spinner"></div>
+        <h3 style="margin-top:15px">Analisando Arquivos...</h3>
+    </div>
+
+    <header>
+        <div class="container" style="padding:0">
+            <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - V32 (Auto-Detect)</h1>
+            <p>Sistema inteligente de detecção de colunas</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card-upload">
+            <div class="input-group">
+                <label>1. RETIDOS (Obrigatório)</label>
+                <input type="file" id="fileRetidos" accept=".csv, .xlsx, .xls">
+            </div>
+            <div class="input-group">
+                <label>2. BASE DETALHADA (Obrigatório)</label>
+                <input type="file" id="fileBase" accept=".csv, .xlsx, .xls">
+            </div>
+            <div class="input-group">
+                <label style="color: green;">3. FINALIZADAS (Opcional - Evolução)</label>
+                <input type="file" id="fileFinalizadas" accept=".csv, .xlsx, .xls">
+            </div>
+            <button class="btn-main" onclick="iniciarProcessamento()">Carregar Dados</button>
+        </div>
+
+        <div id="msgErro"></div>
+
+        <div id="navTabs" class="tabs hidden">
+            <button class="tab-btn active" onclick="mudarAba('operacional')">Operacional</button>
+            <button class="tab-btn" onclick="mudarAba('evolucao')">Evolução</button>
+        </div>
+
+        <div id="viewOperacional" class="view-section hidden">
+            <div class="kpi-row">
+                <div class="kpi-card" style="border-left-color:gray"><h3>Total</h3><div class="value" id="kpiTotal">0</div></div>
+                <div class="kpi-card" style="border-left-color:#17a2b8"><h3>Proc. Ausência</h3><div class="value" id="kpiAusenciaProc">0</div></div>
+                <div class="kpi-card" style="border-left-color:#c69500"><h3>Ausente +1</h3><div class="value" id="kpiAusenciaPlus">0</div></div>
+                <div class="kpi-card" style="border-left-color:#28a745"><h3>Aptos</h3><div class="value" id="kpiApto">0</div></div>
+                <div class="kpi-card" style="border-left-color:#d9534f"><h3>Aguardando</h3><div class="value" id="kpiWait">0</div></div>
+                <div class="kpi-card" style="border-left-color:#343a40"><h3>Verif. Driver</h3><div class="value" id="kpiDriver">0</div></div>
+                <div class="kpi-card" style="border-left-color:#6f42c1"><h3>J&T/Outros</h3><div class="value" id="kpiOutros">0</div></div>
+            </div>
+
+            <div class="filters-bar">
+                <div class="filter-item"><input type="text" id="buscaGeral" placeholder="Buscar..." onkeyup="aplicarFiltros()"></div>
+                <div class="filter-item"><select id="filtroStatus" onchange="aplicarFiltros()"><option value="">Todos Status</option></select></div>
+                <div class="filter-item"><select id="filtroCidade" onchange="aplicarFiltros()"><option value="">Todas Cidades</option></select></div>
+            </div>
+
+            <div class="main-grid">
+                <div class="sidebar">
+                    <div class="ranking-card">
+                        <h4>Top Cidades</h4><div id="rankCidades"></div>
+                    </div>
+                    <div class="ranking-card">
+                        <h4>Top Motivos</h4><div id="rankProblemas"></div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <h3>Listagem</h3>
+                        <button class="btn-main" onclick="copiarCodigos()" style="padding:5px 15px; font-size:12px;">Copiar Códigos</button>
+                    </div>
+                    <table id="tabelaDados">
+                        <thead>
+                            <tr>
+                                <th onclick="ordenar('codigo')">Pedido</th>
+                                <th onclick="ordenar('diasRetidos')">Dias</th>
+                                <th>Status</th>
+                                <th>Motivo</th>
+                                <th>Motorista</th>
+                                <th>Cidade</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="viewEvolucao" class="view-section hidden">
+            <div style="text-align:center; padding:20px; background:white; margin-bottom:20px; border-radius:8px;">
+                <h2>Evolução Diária</h2>
+                <div style="display:flex; justify-content:center; gap:30px; margin-top:15px;">
+                    <div><h3>Total</h3><span id="evoTotal" style="font-size:20px; font-weight:bold">0</span></div>
+                    <div style="color:green"><h3>Baixados</h3><span id="evoBaixados" style="font-size:20px; font-weight:bold">0</span></div>
+                    <div style="color:red"><h3>Pendentes</h3><span id="evoPendentes" style="font-size:20px; font-weight:bold">0</span></div>
+                </div>
+                <div style="background:#eee; height:20px; border-radius:10px; margin:20px auto; max-width:600px; overflow:hidden;">
+                    <div id="barraProgresso" style="width:0%; background:green; height:100%; transition:0.5s;"></div>
+                </div>
+            </div>
+            
+            <div class="main-grid">
+                <div class="ranking-card">
+                    <h4>Top Cidades (Baixas)</h4>
+                    <div id="listaTopCidadesBaixas"></div>
+                </div>
+                <div class="table-container">
+                    <h3>Pendentes</h3>
+                    <table id="tabelaPendentes">
+                        <thead><tr><th>Pedido</th><th>Motorista</th><th>Dias</th></tr></thead>
+                        <tbody id="tbodyPendentes"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURAÇÃO INTELIGENTE ---
+        // Palavras-chave para identificar colunas automaticamente
+        const KEYS = {
+            pedido: ['PEDIDO', 'REMESSA', 'RASTREIO', 'JMS'],
+            dias: ['DIAS', 'RETIDOS', '滯留日'],
+            motivo: ['MOTIVO', 'PROCESSO', 'PROBLEMATICO', 'TIPO', '分析'],
+            motorista: ['MOTORISTA', 'ENTREGADOR', 'RESPONSÁVEL', 'RESPONSAVEL'],
+            cidade: ['CIDADE', 'DESTINO', 'MUNICÍPIO', 'MUNICIPIO']
+        };
+
+        let dadosRaw = [];
+        let dadosFiltrados = [];
+        let dadosPendentes = [];
+
+        function iniciarProcessamento() {
+            const fRetidos = document.getElementById('fileRetidos').files[0];
+            const fBase = document.getElementById('fileBase').files[0];
+            const fFinal = document.getElementById('fileFinalizadas').files[0];
+            const msg = document.getElementById('msgErro');
+            
+            msg.style.display = 'none'; msg.innerText = '';
+
+            if (!fRetidos || !fBase) {
+                mostrarErro("ERRO: Selecione 'Retidos' e 'Base Detalhada'.");
+                return;
+            }
+
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+
+            setTimeout(async () => {
+                try {
+                    const retidosData = await lerArquivo(fRetidos);
+                    const baseData = await lerArquivo(fBase);
+                    let finalData = null;
+                    if (fFinal) finalData = await lerArquivo(fFinal);
+
+                    processarDados(retidosData, baseData, finalData);
+                    
+                    document.getElementById('navTabs').classList.remove('hidden');
+                    mudarAba('operacional');
+
+                } catch (e) {
+                    mostrarErro("ERRO CRÍTICO: " + e.message);
+                    console.error(e);
+                } finally {
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                }
+            }, 200);
+        }
+
+        function lerArquivo(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const wb = XLSX.read(e.target.result, { type: 'array' });
+                        const sheet = wb.Sheets[wb.SheetNames[0]];
+                        // raw: false força tudo para texto (evita erro de numero cientifico)
+                        const json = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false });
+                        resolve(json);
+                    } catch (err) { reject(err); }
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function acharIndice(headers, keywords) {
+            if(!headers) return -1;
+            const hUpper = headers.map(h => String(h).toUpperCase());
+            for (let key of keywords) {
+                const idx = hUpper.findIndex(h => h.includes(key));
+                if (idx !== -1) return idx;
+            }
+            return -1;
+        }
+
+        function limparID(val) {
+            if (!val) return "";
+            return String(val).trim().toUpperCase().replace(/[^A-Z0-9]/g, ""); // Só letras e números
+        }
+
+        function processarDados(retidos, base, finalizadas) {
+            // 1. Detectar Colunas - RETIDOS
+            const headRet = retidos[0];
+            const idxR_Ped = acharIndice(headRet, KEYS.pedido);
+            const idxR_Dias = acharIndice(headRet, KEYS.dias);
+            const idxR_Motivo = acharIndice(headRet, KEYS.motivo);
+
+            if (idxR_Ped === -1) throw new Error("Coluna 'Pedido' não encontrada no arquivo RETIDOS.");
+
+            // 2. Detectar Colunas - BASE
+            const headBase = base[0];
+            const idxB_Ped = acharIndice(headBase, KEYS.pedido);
+            const idxB_Mot = acharIndice(headBase, KEYS.motorista);
+            const idxB_Cid = acharIndice(headBase, KEYS.cidade);
+
+            // Debug para o usuário se der erro
+            let debugMsg = "";
+            if (idxB_Ped === -1) debugMsg += "Falta 'Pedido' na Base.\n";
+            if (idxB_Mot === -1) debugMsg += "Falta 'Motorista/Entregador' na Base.\n";
+            if (idxB_Cid === -1) debugMsg += "Falta 'Cidade' na Base.\n";
+            
+            if (debugMsg) {
+                mostrarErro("AVISO DE MAPEAMENTO (Verifique as colunas):\n" + debugMsg + "\nTentando processar mesmo assim...");
+            }
+
+            // 3. Mapear Base
+            const mapBase = new Map();
+            for (let i = 1; i < base.length; i++) {
+                const row = base[i];
+                if (!row[idxB_Ped]) continue;
+                const id = limparID(row[idxB_Ped]);
+                mapBase.set(id, {
+                    motorista: idxB_Mot !== -1 ? row[idxB_Mot] : "N/D",
+                    cidade: idxB_Cid !== -1 ? row[idxB_Cid] : "N/D"
+                });
+            }
+
+            // 4. Mapear Finalizadas (se houver)
+            const mapFinal = new Set();
+            const mapFinalCidade = new Map();
+            if (finalizadas) {
+                const headFin = finalizadas[0];
+                const idxF_Ped = acharIndice(headFin, KEYS.pedido);
+                const idxF_Cid = acharIndice(headFin, KEYS.cidade);
+                
+                for (let i = 1; i < finalizadas.length; i++) {
+                    const row = finalizadas[i];
+                    if (row[idxF_Ped]) {
+                        const id = limparID(row[idxF_Ped]);
+                        mapFinal.add(id);
+                        if(idxF_Cid !== -1) mapFinalCidade.set(id, row[idxF_Cid]);
+                    }
+                }
+            }
+
+            // 5. Cruzar Tudo
+            dadosRaw = [];
+            let baixados = [], pendentes = [], countsCidadesBaixa = {};
+            let cruzouAlgum = false;
+
+            for (let i = 1; i < retidos.length; i++) {
+                const row = retidos[i];
+                if (!row[idxR_Ped]) continue;
+
+                const id = limparID(row[idxR_Ped]);
+                if (id.length < 5) continue; // Ignora lixo
+
+                const dias = parseInt(row[idxR_Dias]) || 0;
+                let motivo = idxR_Motivo !== -1 ? String(row[idxR_Motivo]) : "";
+                
+                // Busca na Base
+                const info = mapBase.get(id);
+                let motorista = "N/D";
+                let cidade = "N/D";
+
+                if (info) {
+                    cruzouAlgum = true;
+                    motorista = info.motorista;
+                    cidade = info.cidade;
+                }
+
+                // Lógica de Status
+                let status = { text: "VERIFICAR", class: "status-verify", ipo: "CHECK_VERIFY" };
+                const mLower = motivo.toLowerCase();
+                const dUpper = String(motorista).toUpperCase();
+
+                // Lógica Simplificada
+                if (!motivo) {
+                    status = { text: "VERIFICAR MOTORISTA", class: "status-driver", ipo: "VERIFY_DRIVER" };
+                } else if (mLower.includes("recusa")) {
+                    status = { text: "APTO DEVOLUÇÃO", class: "status-apto", ipo: "APTO" };
+                } else if (mLower.includes("ausência") || mLower.includes("ausencia")) {
+                    // Lista de Drivers alvo
+                    const targets = ["JHONATAN", "FELIPE LOMBRE"]; 
+                    if (targets.some(t => dUpper.includes(t))) {
+                        status = { text: "PROC. AUSÊNCIA", class: "status-ausencia-proc", ipo: "AUSENCIA_PROCESS" };
+                    } else {
+                        status = { text: "AUSENTE +1", class: "status-ausencia-plus", ipo: "AUSENCIA_PLUS" };
+                    }
+                } else if (mLower.includes("endereço") || mLower.includes("impossibilidade")) {
+                    status = { text: "AGUARDANDO", class: "status-wait", ipo: "WAIT" };
+                }
+
+                const obj = {
+                    codigo: id,
+                    diasRetidos: dias,
+                    problema: motivo,
+                    motorista: motorista,
+                    cidade: cidade,
+                    statusTxt: status.text,
+                    statusClass: status.class,
+                    statusIPO: status.ipo
+                };
+
+                dadosRaw.push(obj);
+
+                // Evolução
+                if (mapFinal.has(id)) {
+                    let c = mapFinalCidade.get(id) || "N/D";
+                    countsCidadesBaixa[c] = (countsCidadesBaixa[c] || 0) + 1;
+                    baixados.push(obj);
+                } else {
+                    pendentes.push(obj);
+                }
+            }
+
+            if (!cruzouAlgum) {
+                mostrarErro("ALERTA: Nenhum pedido de 'Retidos' foi encontrado na 'Base Detalhada'.\nVerifique se os códigos dos pedidos são os mesmos nos dois arquivos.");
+            }
+
+            dadosRaw.sort((a, b) => b.diasRetidos - a.diasRetidos);
+            dadosPendentes = pendentes;
+            
+            popularFiltros();
+            aplicarFiltros();
+            renderEvolucao(dadosRaw.length, baixados.length, pendentes.length, countsCidadesBaixa);
+        }
+
+        function popularFiltros() {
+            const statusSet = new Set(dadosRaw.map(d => d.statusIPO));
+            const cidSet = new Set(dadosRaw.map(d => d.cidade));
+            
+            const sSel = document.getElementById('filtroStatus');
+            sSel.innerHTML = '<option value="">Todos Status</option>';
+            statusSet.forEach(s => {
+                if(s) sSel.innerHTML += `<option value="${s}">${s}</option>`;
+            });
+
+            const cSel = document.getElementById('filtroCidade');
+            cSel.innerHTML = '<option value="">Todas Cidades</option>';
+            Array.from(cidSet).sort().forEach(c => {
+               if(c !== "N/D") cSel.innerHTML += `<option value="${c}">${c}</option>`;
+            });
+        }
+
+        function aplicarFiltros() {
+            const busca = document.getElementById('buscaGeral').value.toUpperCase();
+            const fStat = document.getElementById('filtroStatus').value;
+            const fCid = document.getElementById('filtroCidade').value;
+
+            dadosFiltrados = dadosRaw.filter(d => {
+                const txt = (d.codigo + d.motorista).toUpperCase();
+                return txt.includes(busca) && 
+                       (fStat === "" || d.statusIPO === fStat) &&
+                       (fCid === "" || d.cidade === fCid);
+            });
+
+            renderTabela();
+            atualizarKPIs();
+            renderRanks();
+        }
+
+        function renderTabela() {
+            const tbody = document.getElementById('tbody');
+            tbody.innerHTML = "";
+            dadosFiltrados.slice(0, 200).forEach(d => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${d.codigo}</b></td>
+                        <td>${d.diasRetidos}</td>
+                        <td><span class="badge ${d.statusClass}">${d.statusTxt}</span></td>
+                        <td style="font-size:11px">${d.problema.substring(0,30)}</td>
+                        <td style="font-size:11px">${d.motorista}</td>
+                        <td>${d.cidade}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function atualizarKPIs() {
+            document.getElementById('kpiTotal').innerText = dadosFiltrados.length;
+            const count = (ipo) => dadosFiltrados.filter(d => d.statusIPO === ipo).length;
+            document.getElementById('kpiAusenciaProc').innerText = count('AUSENCIA_PROCESS');
+            document.getElementById('kpiAusenciaPlus').innerText = count('AUSENCIA_PLUS');
+            document.getElementById('kpiApto').innerText = count('APTO');
+            document.getElementById('kpiWait').innerText = count('WAIT');
+            document.getElementById('kpiDriver').innerText = count('VERIFY_DRIVER');
+            document.getElementById('kpiOutros').innerText = dadosFiltrados.length - (count('AUSENCIA_PROCESS')+count('AUSENCIA_PLUS')+count('APTO')+count('WAIT')+count('VERIFY_DRIVER'));
+        }
+
+        function renderRanks() {
+            renderSimples('rankCidades', 'cidade');
+            renderSimples('rankProblemas', 'problema');
+        }
+
+        function renderSimples(elId, key) {
+            const el = document.getElementById(elId);
+            const counts = {};
+            dadosFiltrados.forEach(d => counts[d[key]] = (counts[d[key]]||0)+1);
+            const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,5);
+            el.innerHTML = sorted.map(([k,v]) => `<div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px"><span>${k.substring(0,20)}</span><b>${v}</b></div>`).join('');
+        }
+
+        function renderEvolucao(total, baixados, pendentes, countsCidade) {
+            document.getElementById('evoTotal').innerText = total;
+            document.getElementById('evoBaixados').innerText = baixados;
+            document.getElementById('evoPendentes').innerText = pendentes;
+            
+            const pct = total > 0 ? Math.round((baixados/total)*100) : 0;
+            document.getElementById('barraProgresso').style.width = pct + "%";
+
+            // Tabela Pendentes
+            const tb = document.getElementById('tbodyPendentes');
+            tb.innerHTML = "";
+            dadosPendentes.slice(0, 100).forEach(d => {
+                tb.innerHTML += `<tr><td>${d.codigo}</td><td>${d.motorista}</td><td>${d.diasRetidos}</td></tr>`;
+            });
+
+            // Top Cidades Baixa
+            const el = document.getElementById('listaTopCidadesBaixas');
+            const sorted = Object.entries(countsCidade).sort((a,b) => b[1]-a[1]).slice(0,5);
+            el.innerHTML = sorted.map(([k,v]) => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee"><span>${k}</span><b>${v}</b></div>`).join('');
+        }
+
+        function mostrarErro(txt) {
+            const e = document.getElementById('msgErro');
+            e.innerText = txt;
+            e.style.display = 'block';
+        }
+
+        function mudarAba(aba) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            if(aba === 'operacional') {
+                document.getElementById('viewOperacional').classList.add('active');
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            } else {
+                document.getElementById('viewEvolucao').classList.add('active');
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            }
+        }
+
+        function copiarCodigos() {
+            const txt = dadosFiltrados.map(d => d.codigo).join("\n");
+            navigator.clipboard.writeText(txt).then(() => alert(dadosFiltrados.length + " códigos copiados!"));
+        }
+        
+        // Sorting simples
+        let sortDir = 1;
+        function ordenar(key) {
+            sortDir *= -1;
+            dadosFiltrados.sort((a,b) => (a[key] > b[key] ? 1 : -1) * sortDir);
+            renderTabela();
+        }
+    </script>
+</body>
+</html>
