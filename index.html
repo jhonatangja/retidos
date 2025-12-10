@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Operacional J&T - V26 (Evolução Completa)</title>
+    <title>Dashboard Operacional J&T - V28 (Auto-Detect & Cobrança)</title>
     
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -82,12 +82,10 @@
         .filter-item label { font-size: 11px; font-weight: bold; color: #777; }
         .filter-item input, .filter-item select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 150px; }
         
-        /* Dias Manual */
         .days-input-group { display: flex; gap: 5px; }
         .days-input-group select { width: 60px; min-width: 0; }
         .days-input-group input { width: 80px; }
 
-        /* Checkbox Group */
         .checkbox-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .checkbox-item { display: flex; align-items: center; gap: 5px; font-size: 13px; background: #f1f3f5; padding: 5px 10px; border-radius: 15px; cursor: pointer; }
         .checkbox-item input { width: auto; margin: 0; cursor: pointer; }
@@ -101,7 +99,6 @@
 
         .ranking-card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 100%; }
         .ranking-header { font-weight: bold; color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 16px; display:flex; align-items:center; gap:8px;}
-        
         .rank-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 13px; }
         .rank-name { font-weight: 600; color: #555; width: 50%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .rank-bar-container { flex: 1; background: #f1f1f1; height: 8px; border-radius: 4px; margin: 0 10px; overflow: hidden; }
@@ -127,14 +124,27 @@
         .status-ausencia-proc { background-color: var(--info); }
         .status-ausencia-plus { background-color: var(--gold); color: white; }
         .status-driver { background-color: var(--dark); }
-        
-        /* Status Evolução */
         .evo-ok { color: var(--success); font-weight: bold; }
         .evo-pend { color: var(--primary); font-weight: bold; }
 
         .btn-action { background: #17a2b8; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 5px; }
         .btn-excel { background: #218838; }
+        .btn-cobranca { background: #fd7e14; color: white; font-weight: bold; }
 
+        /* MODAL */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 10000;
+            display: none; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; padding: 25px; border-radius: 8px; width: 500px; max-width: 90%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; }
+        .close-btn { cursor: pointer; color: #aaa; font-size: 20px; }
+        .modal-body textarea { width: 100%; height: 200px; padding: 10px; margin-top: 10px; border: 1px solid #ccc; border-radius: 4px; resize: none; font-family: monospace; }
+        
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--secondary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -149,13 +159,33 @@
     <div id="loadingOverlay" class="hidden">
         <div class="spinner"></div>
         <h3>Processando...</h3>
-        <p style="color:#666; font-size:12px;">Comparando bases e aplicando filtros</p>
+        <p style="color:#666; font-size:12px;">Identificando modelo e cruzando dados</p>
+    </div>
+
+    <!-- MODAL COBRANÇA -->
+    <div id="modalCobranca" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span><i class="fa-brands fa-whatsapp"></i> Gerar Cobrança</span>
+                <span class="close-btn" onclick="fecharModalCobranca()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <label>Selecione o Motorista:</label>
+                <select id="selMotoristaCobranca" onchange="gerarTextoCobranca()" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+                    <option value="">-- Selecione --</option>
+                </select>
+                <textarea id="txtAreaCobranca"></textarea>
+                <button class="btn-main" style="width: 100%; margin-top: 10px;" onclick="copiarTextoCobranca()">
+                    <i class="fa-regular fa-copy"></i> Copiar Texto
+                </button>
+            </div>
+        </div>
     </div>
 
     <header>
         <div class="container" style="padding: 0;">
-            <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - V26</h1>
-            <p>Filtros Dinâmicos & Evolução Completa</p>
+            <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - V28</h1>
+            <p>Auto-Detecção de Modelo | Gerador de Cobrança | Motorista via Base</p>
         </div>
     </header>
 
@@ -164,11 +194,11 @@
         <!-- ÁREA DE UPLOAD -->
         <div class="card-upload">
             <div class="input-group">
-                <label>1. Planilha RETIDOS (A/E/G/Q)</label>
+                <label>1. Planilha RETIDOS (Auto Detect)</label>
                 <input type="file" id="fileRetidos" accept=".csv, .xlsx, .xls">
             </div>
             <div class="input-group">
-                <label>2. Base DETALHADA (A/R/AD)</label>
+                <label>2. Base DETALHADA (A/P/R/AD)</label>
                 <input type="file" id="fileBase" accept=".csv, .xlsx, .xls">
             </div>
             <div class="input-group">
@@ -201,7 +231,6 @@
                         <input type="text" id="buscaGeral" placeholder="Pedido/Motorista..." onkeyup="aplicarFiltros()">
                     </div>
                     
-                    <!-- FILTRO DE DIAS MANUAL -->
                     <div class="filter-item">
                         <label>Dias Retidos</label>
                         <div class="days-input-group">
@@ -225,7 +254,7 @@
                 </div>
 
                 <div class="filter-item" style="width:100%;">
-                    <label style="margin-bottom:8px; display:block;">Exibir Status (Desmarque para esconder):</label>
+                    <label style="margin-bottom:8px; display:block;">Exibir Status:</label>
                     <div class="checkbox-group">
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="AUSENCIA_PROCESS"> 🔵 Proc. Ausência</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="AUSENCIA_PLUS"> 🟡 Ausente +1</label>
@@ -259,6 +288,7 @@
                     <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
                         <h3>Listagem de Pedidos</h3>
                         <div>
+                            <button class="btn-action btn-cobranca" onclick="abrirModalCobranca()"><i class="fa-brands fa-whatsapp"></i> 📢 Cobrar Motorista</button>
                             <button class="btn-action" onclick="copiarCodigos()"><i class="fa-regular fa-copy"></i> Copiar</button>
                             <button class="btn-action btn-excel" onclick="exportarExcel('ops')"><i class="fa-solid fa-file-excel"></i> Exportar</button>
                         </div>
@@ -280,59 +310,41 @@
             </div>
         </div>
 
-        <!-- ABA EVOLUÇÃO (COMPARATIVO) -->
+        <!-- ABA EVOLUÇÃO -->
         <div id="tabEvo" class="tab-content">
             
-            <!-- KPIs Comparativos -->
             <div class="kpi-row" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="kpi-card border-gray">
-                    <h3>Base Retidos (Planilha 1)</h3>
-                    <div class="value" id="evoBaseTotal">0</div>
-                    <div class="sub-value">Pedidos originais</div>
-                </div>
-                <div class="kpi-card border-green">
-                    <h3>Recuperados (Entregues)</h3>
-                    <div class="value" id="evoRecuperados">0</div>
-                    <div class="sub-value">Encontrados na Planilha 3</div>
-                </div>
-                <div class="kpi-card border-red">
-                    <h3>Ainda Retidos (Pendentes)</h3>
-                    <div class="value" id="evoPendentes">0</div>
-                    <div class="sub-value">Não entregues ainda</div>
-                </div>
-                <div class="kpi-card border-info">
-                    <h3>Eficiência de Recuperação</h3>
-                    <div class="value" id="evoEficiencia">0%</div>
-                    <div class="sub-value">% da base entregue</div>
-                </div>
+                <div class="kpi-card border-gray"><h3>Base Retidos (Planilha 1)</h3><div class="value" id="evoBaseTotal">0</div></div>
+                <div class="kpi-card border-green"><h3>Recuperados</h3><div class="value" id="evoRecuperados">0</div></div>
+                <div class="kpi-card border-red"><h3>Pendentes</h3><div class="value" id="evoPendentes">0</div></div>
+                <div class="kpi-card border-info"><h3>Eficiência</h3><div class="value" id="evoEficiencia">0%</div></div>
             </div>
 
             <div class="evo-grid">
                 <div class="ranking-card" style="border-top: 4px solid var(--success);">
-                    <div class="ranking-header"><i class="fa-solid fa-truck-fast"></i> TOP 5 MOTORISTAS (Que mais recuperaram)</div>
+                    <div class="ranking-header"><i class="fa-solid fa-truck-fast"></i> TOP 5 RECUPERADORES</div>
                     <div id="evoTopMotoristas" style="padding: 10px 0;"></div>
                 </div>
                 <div class="ranking-card" style="border-top: 4px solid var(--secondary);">
-                    <div class="ranking-header"><i class="fa-solid fa-map-location-dot"></i> TOP 5 CIDADES (Mais recuperadas)</div>
+                    <div class="ranking-header"><i class="fa-solid fa-map-location-dot"></i> TOP 5 CIDADES RECUPERADAS</div>
                     <div id="evoTopCidades" style="padding: 10px 0;"></div>
                 </div>
             </div>
 
-            <!-- TABELA DETALHADA EVOLUÇÃO -->
             <div class="table-container">
                 <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h3>Relatório Detalhado de Evolução</h3>
-                    <button class="btn-action btn-excel" onclick="exportarExcel('evo')"><i class="fa-solid fa-file-excel"></i> Exportar Evolução</button>
+                    <h3>Relatório Evolução</h3>
+                    <button class="btn-action btn-excel" onclick="exportarExcel('evo')"><i class="fa-solid fa-file-excel"></i> Exportar</button>
                 </div>
                 <table id="tabelaEvo">
                     <thead>
                         <tr>
                             <th onclick="ordenarEvo('codigo')">Pedido</th>
                             <th onclick="ordenarEvo('statusEvo')">Situação</th>
-                            <th onclick="ordenarEvo('diasRetidos')">Dias Retidos <i class="fa-solid fa-sort"></i></th>
+                            <th onclick="ordenarEvo('diasRetidos')">Dias Ret. <i class="fa-solid fa-sort"></i></th>
                             <th onclick="ordenarEvo('motorista')">Motorista</th>
                             <th onclick="ordenarEvo('cidade')">Cidade</th>
-                            <th onclick="ordenarEvo('problema')">Problemática Anterior</th>
+                            <th onclick="ordenarEvo('problema')">Problemática</th>
                         </tr>
                     </thead>
                     <tbody id="tbodyEvo"></tbody>
@@ -344,9 +356,13 @@
 
     <!-- SCRIPT LÓGICO -->
     <script>
-        // CONFIGURAÇÃO DE ÍNDICES FIXOS (V26)
-        const IDX_RETIDOS = { pedido: 0, motivo: 4, dias: 6, motorista: 16 };
-        const IDX_BASE = { pedido: 0, data: 17, cidade: 29 };
+        // CONFIGURAÇÃO DOS DOIS MODELOS DE RETIDOS
+        const MODELO_1 = { pedido: 0, motivo: 4, dias: 6 }; // Old: E=Motivo, G=Dias
+        const MODELO_2 = { pedido: 0, dias: 13, motivo: 20 }; // New: N=Dias, U=Motivo
+        
+        // Base (Fixa): A=Pedido, P=Motorista, R=Data, AD=Cidade
+        const IDX_BASE = { pedido: 0, motorista: 15, data: 17, cidade: 29 };
+        
         const IDX_EVO = { pedido: 0, motorista: 4, cidade: 19 };
 
         const REGRA_DIAS = 9;
@@ -358,8 +374,10 @@
         let dadosFiltrados = [];
         let dadosEvolucaoDetalhados = []; 
         let setRetidosOriginais = new Set(); 
+        
+        // Variável global para armazenar índice ativo
+        let idxRetidosAtivo = MODELO_2; // Padrão
 
-        // --- SISTEMA DE ABAS ---
         function mudarAba(aba) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
@@ -367,7 +385,6 @@
             event.target.classList.add('active');
         }
 
-        // --- LEITURA E CARREGAMENTO ---
         function lerArquivo(arquivo) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -403,10 +420,12 @@
                     const retidos = await lerArquivo(fRetidos);
                     const base = await lerArquivo(fBase);
                     
-                    // Processa Operacional
+                    // AUTO DETECT MODELO RETIDOS
+                    detectarModeloRetidos(retidos);
+
+                    // Processa
                     processarLogica(retidos, base);
 
-                    // Processa Evolução se existir
                     if(fEvo) {
                         const evoData = await lerArquivo(fEvo);
                         processarEvolucao(evoData);
@@ -437,13 +456,43 @@
             return String(val).trim().toUpperCase().replace(/[\s\-\.]/g, "");
         }
 
+        // --- DETECÇÃO AUTOMÁTICA ---
+        function detectarModeloRetidos(dados) {
+            if(!dados || dados.length === 0) return;
+            
+            // Olha a primeira linha (cabeçalho)
+            const header = dados[0].map(c => String(c).toLowerCase());
+            
+            // Modelo 1: Dias em G (index 6) ou Motivo em E (index 4)
+            const colE = header[4] || "";
+            const colG = header[6] || "";
+            
+            // Modelo 2: Dias em N (index 13) ou Motivo em U (index 20)
+            const colN = header[13] || "";
+            const colU = header[20] || "";
+
+            // Lógica de Detecção
+            if (colG.includes("dias") || colG.includes("retenção") || colG.includes("duration")) {
+                idxRetidosAtivo = MODELO_1;
+                console.log("Modelo 1 Detectado (Antigo)");
+            } else if (colN.includes("dias") || colN.includes("retidos") || colN.includes("duration")) {
+                idxRetidosAtivo = MODELO_2;
+                console.log("Modelo 2 Detectado (Atual)");
+            } else {
+                // Fallback: Tenta pelo motivo
+                if (colE.includes("tipo") || colE.includes("problema")) {
+                    idxRetidosAtivo = MODELO_1;
+                } else {
+                    idxRetidosAtivo = MODELO_2; // Padrão
+                }
+            }
+        }
+
         // --- LÓGICA OPERACIONAL ---
         function processarLogica(retidos, base) {
-            if (retidos.length < 2) throw new Error("Planilha RETIDOS vazia.");
-            if (base.length < 2) throw new Error("Planilha BASE vazia.");
-
             setRetidosOriginais.clear(); 
 
+            // 1. Mapear Base
             const mapBase = new Map();
             for(let i=1; i < base.length; i++) {
                 const linha = base[i];
@@ -452,17 +501,20 @@
                 if (!rawPed) continue;
                 mapBase.set(limparCodigo(rawPed), {
                     data: linha[IDX_BASE.data],
-                    cidade: linha[IDX_BASE.cidade]
+                    cidade: linha[IDX_BASE.cidade],
+                    motorista: linha[IDX_BASE.motorista] // Coluna P
                 });
             }
 
             const hoje = new Date();
             dadosRaw = [];
 
+            // 2. Cruzar usando o Modelo Detectado
             for(let i=1; i < retidos.length; i++) {
                 const linha = retidos[i];
                 if (!linha || linha.length === 0) continue;
-                const rawPed = linha[IDX_RETIDOS.pedido];
+                
+                const rawPed = linha[idxRetidosAtivo.pedido];
                 if (!rawPed) continue;
 
                 const codigo = limparCodigo(rawPed);
@@ -470,16 +522,17 @@
 
                 setRetidosOriginais.add(codigo);
 
-                const diasRetidos = parseInt(linha[IDX_RETIDOS.dias]) || 0;
-                let problema = String(linha[IDX_RETIDOS.motivo] || "").trim();
-                let motorista = String(linha[IDX_RETIDOS.motorista] || "N/D").trim(); 
+                const diasRetidos = parseInt(linha[idxRetidosAtivo.dias]) || 0;
+                let problema = String(linha[idxRetidosAtivo.motivo] || "").trim();
                 
                 const match = mapBase.get(codigo);
                 let cidade = "N/D";
                 let diasProb = 0;
+                let motorista = "N/D";
 
                 if (match) {
                     if (match.cidade) cidade = match.cidade;
+                    if (match.motorista) motorista = String(match.motorista).trim();
                     if (match.data) {
                         const d = parseData(match.data);
                         if (d && !isNaN(d)) {
@@ -554,13 +607,11 @@
             const countMot = {};
             const countCid = {};
             let recuperadosCount = 0;
-            const setRecuperados = new Set(); // IDs recuperados
+            const setRecuperados = new Set();
 
-            // 1. Identificar quem foi entregue (que estava retido)
             for(let i=1; i < data.length; i++) {
                 const linha = data[i];
                 if(!linha || linha.length === 0) continue;
-
                 const rawPed = linha[IDX_EVO.pedido];
                 if(!rawPed) continue;
                 const codigo = limparCodigo(rawPed);
@@ -568,104 +619,130 @@
                 if (setRetidosOriginais.has(codigo)) {
                     recuperadosCount++;
                     setRecuperados.add(codigo);
-
                     const mot = String(linha[IDX_EVO.motorista] || "N/D").trim().toUpperCase();
                     const cid = String(linha[IDX_EVO.cidade] || "N/D").trim().toUpperCase();
-
                     if(mot !== "N/D") countMot[mot] = (countMot[mot] || 0) + 1;
                     if(cid !== "N/D") countCid[cid] = (countCid[cid] || 0) + 1;
                 }
             }
 
-            // 2. Montar Tabela Detalhada de Evolução (COM DIAS E MOTORISTA DO RETIDO)
             dadosEvolucaoDetalhados = dadosRaw.map(r => {
                 const entregue = setRecuperados.has(r.codigo);
                 return {
                     codigo: r.codigo,
-                    motorista: r.motorista, // Motorista que reteve
+                    motorista: r.motorista, 
                     cidade: r.cidade,
                     problema: r.problema,
-                    diasRetidos: r.diasRetidos, // ADICIONADO
+                    diasRetidos: r.diasRetidos,
                     statusEvo: entregue ? "ENTREGUE" : "PENDENTE",
                     classeEvo: entregue ? "evo-ok" : "evo-pend"
                 };
             });
 
-            // Ordena: Pendentes primeiro, depois por dias retidos decrescente
             dadosEvolucaoDetalhados.sort((a,b) => {
                 if (a.statusEvo !== b.statusEvo) return a.statusEvo === "PENDENTE" ? -1 : 1;
-                return b.diasRetidos - a.diasRetidos; // Quem tem mais dias primeiro
+                return b.diasRetidos - a.diasRetidos;
             });
 
-            // 3. Renderizar Gráficos
             const topMot = Object.entries(countMot).sort((a,b) => b[1] - a[1]).slice(0, 5);
             const topCid = Object.entries(countCid).sort((a,b) => b[1] - a[1]).slice(0, 5);
 
             renderEvolucao({ 
-                motoristas: topMot, 
-                cidades: topCid,
-                kpis: {
-                    total: setRetidosOriginais.size, 
-                    rec: recuperadosCount,           
-                    pen: setRetidosOriginais.size - recuperadosCount 
-                }
+                motoristas: topMot, cidades: topCid,
+                kpis: { total: setRetidosOriginais.size, rec: recuperadosCount, pen: setRetidosOriginais.size - recuperadosCount }
             });
             renderTabelaEvo();
         }
 
+        // --- MODAL COBRANÇA ---
+        function abrirModalCobranca() {
+            // Popula o select com motoristas da lista atual
+            const motoristas = [...new Set(dadosRaw.map(d => d.motorista))].filter(m => m && m !== "N/D").sort();
+            const sel = document.getElementById('selMotoristaCobranca');
+            sel.innerHTML = '<option value="">-- Selecione o Motorista --</option>';
+            
+            motoristas.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.innerText = m;
+                sel.appendChild(opt);
+            });
+
+            document.getElementById('modalCobranca').style.display = 'flex';
+            document.getElementById('txtAreaCobranca').value = "";
+        }
+
+        function fecharModalCobranca() {
+            document.getElementById('modalCobranca').style.display = 'none';
+        }
+
+        function gerarTextoCobranca() {
+            const motorista = document.getElementById('selMotoristaCobranca').value;
+            if(!motorista) return;
+
+            // Filtra os pacotes do motorista que NÃO estão Aptos/Entregues (apenas pendencias reais)
+            const pendencias = dadosRaw.filter(d => 
+                d.motorista === motorista && 
+                d.statusIPO !== 'APTO' // Se quiser cobrar tudo, remova essa linha
+            );
+
+            if(pendencias.length === 0) {
+                document.getElementById('txtAreaCobranca').value = "Nenhuma pendência encontrada para este motorista.";
+                return;
+            }
+
+            let texto = `*OLÁ ${motorista}!*\n\nConstam *${pendencias.length}* pacotes pendentes de regularização na sua conta:\n\n`;
+
+            pendencias.forEach(p => {
+                texto += `📦 *${p.codigo}* (${p.diasRetidos} dias)\⚠️ ${p.problema}\n📍 ${p.cidade}\n\n`;
+            });
+
+            texto += "Favor regularizar o quanto antes.";
+            document.getElementById('txtAreaCobranca').value = texto;
+        }
+
+        function copiarTextoCobranca() {
+            const txt = document.getElementById('txtAreaCobranca');
+            txt.select();
+            document.execCommand('copy');
+            alert("Texto copiado para a área de transferência!");
+        }
+
+        // UTILS, FILTROS E RENDER (Mantidos iguais ao V27)
         function renderEvolucao(dados) {
             const elMot = document.getElementById('evoTopMotoristas');
             const elCid = document.getElementById('evoTopCidades');
             const k = dados.kpis;
-            
             document.getElementById('evoBaseTotal').innerText = k.total;
             document.getElementById('evoRecuperados').innerText = k.rec;
             document.getElementById('evoPendentes').innerText = k.pen;
-            
             const eff = k.total > 0 ? ((k.rec / k.total) * 100).toFixed(1) : 0;
             document.getElementById('evoEficiencia').innerText = eff + "%";
-
-            elMot.innerHTML = "";
-            elCid.innerHTML = "";
-
+            elMot.innerHTML = ""; elCid.innerHTML = "";
             if(!dados.motoristas || dados.motoristas.length === 0) {
-                const msg = "<div style='color:#999; text-align:center; padding:20px'>Sem dados</div>";
-                elMot.innerHTML = msg; elCid.innerHTML = msg; return;
+                const msg = "<div style='color:#999; text-align:center; padding:20px'>Sem dados</div>"; elMot.innerHTML = msg; elCid.innerHTML = msg; return;
             }
-
             const maxMot = dados.motoristas[0][1];
             dados.motoristas.forEach(([nome, qtd], idx) => {
                 const pct = (qtd / maxMot) * 100;
                 elMot.innerHTML += `<div class="rank-row"><div style="font-weight:bold; width:20px; color:#555;">#${idx+1}</div><div class="rank-name" style="width:50%" title="${nome}">${nome}</div><div class="rank-bar-container"><div class="rank-bar bar-green" style="width: ${pct}%"></div></div><div class="rank-count">${qtd}</div></div>`;
             });
-
             const maxCid = dados.cidades[0][1];
             dados.cidades.forEach(([nome, qtd], idx) => {
                 const pct = (qtd / maxCid) * 100;
                 elCid.innerHTML += `<div class="rank-row"><div style="font-weight:bold; width:20px; color:#555;">#${idx+1}</div><div class="rank-name" style="width:50%" title="${nome}">${nome}</div><div class="rank-bar-container"><div class="rank-bar bar-blue" style="width: ${pct}%"></div></div><div class="rank-count">${qtd}</div></div>`;
             });
         }
-
         function renderTabelaEvo() {
             const tbody = document.getElementById('tbodyEvo');
             tbody.innerHTML = "";
-            const lista = dadosEvolucaoDetalhados.slice(0, 500); // Limitador visual
-            
+            const lista = dadosEvolucaoDetalhados.slice(0, 500); 
             lista.forEach(r => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${r.codigo}</td>
-                    <td class="${r.classeEvo}">${r.statusEvo}</td>
-                    <td style="font-weight:bold; text-align:center;">${r.diasRetidos}</td>
-                    <td>${r.motorista}</td>
-                    <td>${r.cidade}</td>
-                    <td style="font-size:11px; color:#777;">${r.problema}</td>
-                `;
+                tr.innerHTML = `<td>${r.codigo}</td><td class="${r.classeEvo}">${r.statusEvo}</td><td style="font-weight:bold; text-align:center;">${r.diasRetidos}</td><td>${r.motorista}</td><td>${r.cidade}</td><td style="font-size:11px; color:#777;">${r.problema}</td>`;
                 tbody.appendChild(tr);
             });
         }
-
-        // --- UTILS COMUNS ---
         function parseData(val) {
             if (!val) return null;
             if (val instanceof Date) return val;
@@ -679,7 +756,6 @@
             }
             return new Date(val);
         }
-
         function popularFiltrosAuxiliares() {
             const cidades = [...new Set(dadosRaw.map(d => d.cidade))].filter(c => c && c !== "N/D").sort();
             const problemas = [...new Set(dadosRaw.map(d => d.problema))].filter(p => p).sort();
@@ -690,25 +766,18 @@
             cidades.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.innerText = c; selCidade.appendChild(opt); });
             problemas.forEach(p => { const opt = document.createElement('option'); opt.value = p; opt.innerText = p.length > 60 ? p.substring(0,60)+"..." : p; selProb.appendChild(opt); });
         }
-
         function aplicarFiltros() {
             const busca = document.getElementById('buscaGeral').value.toLowerCase();
             const cityFilter = document.getElementById('filtroCidade').value;
             const probFilter = document.getElementById('filtroProblema').value;
-            
-            // Filtro Dias Manual
             const opDias = document.getElementById('operadorDias').value;
             const valDias = document.getElementById('valorDias').value;
-
-            // Checkboxes
             const checkedStatus = Array.from(document.querySelectorAll('.checkbox-item input:checked')).map(cb => cb.value);
-
             dadosFiltrados = dadosRaw.filter(d => {
                 const matchTxt = d.codigo.toLowerCase().includes(busca) || d.motorista.toLowerCase().includes(busca);
                 const matchCity = cityFilter ? d.cidade === cityFilter : true;
                 const matchProb = probFilter ? d.problema === probFilter : true;
                 const matchSt = checkedStatus.includes(d.statusIPO);
-                
                 let matchDias = true;
                 if(valDias !== "") {
                     const v = parseInt(valDias);
@@ -716,14 +785,12 @@
                     else if(opDias === "menor") matchDias = d.diasRetidos < v;
                     else if(opDias === "igual") matchDias = d.diasRetidos === v;
                 }
-
                 return matchTxt && matchSt && matchCity && matchProb && matchDias;
             });
             atualizarKPIs();
             renderTabela();
             renderTopLists();
         }
-
         function atualizarKPIs() {
             setKPI('kpiTotal', dadosFiltrados.length);
             setKPI('kpiAusenciaProc', dadosFiltrados.filter(d => d.statusIPO === 'AUSENCIA_PROCESS').length);
@@ -733,9 +800,7 @@
             setKPI('kpiDriver', dadosFiltrados.filter(d => d.statusIPO === 'VERIFY_DRIVER').length);
             setKPI('kpiOutros', dadosFiltrados.filter(d => ['CHECK_JT', 'CHECK_VERIFY'].includes(d.statusIPO)).length);
         }
-
         function setKPI(id, val) { const el = document.getElementById(id); if(el) el.innerText = val; }
-
         function renderTabela() {
             const tbody = document.getElementById('tbody');
             tbody.innerHTML = "";
@@ -746,12 +811,10 @@
                 tbody.appendChild(tr);
             });
         }
-
         function renderTopLists() {
             renderRank('listaTopCidades', 'cidade', 'bar-blue');
             renderRank('listaTopProblemas', 'problema', 'bar-red');
         }
-
         function renderRank(elId, key, colorClass) {
             const container = document.getElementById(elId);
             container.innerHTML = "";
@@ -768,7 +831,6 @@
                 container.innerHTML += `<div class="rank-row"><div class="rank-name" title="${nome}">${nome}</div><div class="rank-bar-container"><div class="rank-bar ${colorClass}" style="width: ${pct}%"></div></div><div class="rank-count">${qtd}</div></div>`;
             });
         }
-
         let sortDir = 'desc';
         function ordenar(key) {
             sortDir = sortDir === 'asc' ? 'desc' : 'asc';
@@ -781,8 +843,6 @@
             });
             renderTabela();
         }
-
-        // Ordenação específica da Aba Evolução
         let sortDirEvo = 'desc';
         function ordenarEvo(key) {
             sortDirEvo = sortDirEvo === 'asc' ? 'desc' : 'asc';
@@ -795,7 +855,6 @@
             });
             renderTabelaEvo();
         }
-
         function copiarCodigos() {
             if (dadosFiltrados.length === 0) { alert("Nenhum pedido filtrado."); return; }
             const codigos = dadosFiltrados.map(d => d.codigo).join("\n");
@@ -807,7 +866,6 @@
             catch (err) { alert("Erro ao copiar."); }
             document.body.removeChild(textArea);
         }
-
         function exportarExcel(tipo) {
             let data, nome;
             if(tipo === 'ops') {
