@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Operacional J&T - V28 (Auto-Detect & Cobrança)</title>
+    <title>Dashboard J&T - V41 (Correção Rigorosa Devolução)</title>
     
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,14 +11,15 @@
     <style>
         :root {
             --primary: #d9534f;
-            --secondary: #0275d8;
+            --secondary: #0056b3;
             --warning: #fd7e14;
             --success: #28a745;
             --purple: #6f42c1;
             --info: #17a2b8;
             --dark: #343a40;
-            --gold: #c69500;
-            --bg: #f8f9fa;
+            --teal: #009688;
+            --delivered: #218838;
+            --bg: #f4f6f9;
             --text: #333;
         }
 
@@ -26,7 +27,7 @@
         body { background: var(--bg); color: var(--text); padding-bottom: 50px; }
 
         header {
-            background: linear-gradient(135deg, #b92b27, #1565C0);
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
             color: white; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         header h1 { font-size: 22px; display: flex; align-items: center; gap: 10px; }
@@ -38,13 +39,14 @@
             background: white; padding: 20px; border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px;
             display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end;
+            border-top: 4px solid var(--secondary);
         }
-        .input-group { flex: 1; min-width: 250px; }
-        .input-group label { display: block; font-weight: 700; margin-bottom: 8px; color: #555; font-size: 13px; }
+        .input-group { flex: 1; min-width: 200px; }
+        .input-group label { display: block; font-weight: 700; margin-bottom: 8px; color: #555; font-size: 11px; text-transform: uppercase; }
         .input-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
         
         .btn-main { background: var(--secondary); color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-main:hover { background: #025aa5; }
+        .btn-main:hover { background: #004494; }
 
         /* ABAS */
         .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
@@ -65,7 +67,6 @@
         .kpi-card { background: white; padding: 15px; border-radius: 6px; border-left: 5px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .kpi-card h3 { font-size: 10px; text-transform: uppercase; color: #777; margin-bottom: 5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .kpi-card .value { font-size: 22px; font-weight: 800; color: #333; }
-        .kpi-card .sub-value { font-size: 12px; color: #777; margin-top: 5px; }
         
         .border-purple { border-left-color: var(--purple); }
         .border-orange { border-left-color: var(--warning); }
@@ -73,7 +74,8 @@
         .border-red { border-left-color: var(--primary); }
         .border-info { border-left-color: var(--info); }
         .border-dark { border-left-color: var(--dark); }
-        .border-gold { border-left-color: var(--gold); }
+        .border-teal { border-left-color: var(--teal); }
+        .border-del { border-left-color: var(--delivered); }
         .border-gray { border-left-color: #6c757d; }
 
         /* FILTROS */
@@ -92,10 +94,7 @@
 
         .main-grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
         .evo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        
-        @media (max-width: 900px) { 
-            .main-grid, .evo-grid { grid-template-columns: 1fr; } 
-        }
+        @media (max-width: 900px) { .main-grid, .evo-grid { grid-template-columns: 1fr; } }
 
         .ranking-card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 100%; }
         .ranking-header { font-weight: bold; color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 16px; display:flex; align-items:center; gap:8px;}
@@ -106,8 +105,6 @@
         .rank-count { font-weight: bold; color: #333; width: 30px; text-align: right; }
         .bar-blue { background: var(--secondary); }
         .bar-red { background: var(--primary); }
-        .bar-gold { background: var(--gold); }
-        .bar-green { background: var(--success); }
 
         .table-container { background: white; border-radius: 8px; overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1000px; }
@@ -124,12 +121,15 @@
         .status-ausencia-proc { background-color: var(--info); }
         .status-ausencia-plus { background-color: var(--gold); color: white; }
         .status-driver { background-color: var(--dark); }
+        .status-returned { background-color: var(--teal); } 
+        .status-delivered { background-color: var(--delivered); }
         .evo-ok { color: var(--success); font-weight: bold; }
         .evo-pend { color: var(--primary); font-weight: bold; }
 
         .btn-action { background: #17a2b8; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 5px; }
         .btn-excel { background: #218838; }
         .btn-cobranca { background: #fd7e14; color: white; font-weight: bold; }
+        .btn-city { background: #6f42c1; color: white; font-weight: bold; }
 
         /* MODAL */
         .modal-overlay {
@@ -138,12 +138,12 @@
             display: none; justify-content: center; align-items: center;
         }
         .modal-content {
-            background: white; padding: 25px; border-radius: 8px; width: 500px; max-width: 90%;
+            background: white; padding: 25px; border-radius: 8px; width: 600px; max-width: 90%;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
         .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; }
         .close-btn { cursor: pointer; color: #aaa; font-size: 20px; }
-        .modal-body textarea { width: 100%; height: 200px; padding: 10px; margin-top: 10px; border: 1px solid #ccc; border-radius: 4px; resize: none; font-family: monospace; }
+        .modal-body textarea { width: 100%; height: 350px; padding: 10px; margin-top: 10px; border: 1px solid #ccc; border-radius: 4px; resize: none; font-family: monospace; font-size: 12px; }
         
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--secondary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
@@ -155,25 +155,25 @@
 </head>
 <body>
 
-    <!-- LOADING -->
     <div id="loadingOverlay" class="hidden">
         <div class="spinner"></div>
         <h3>Processando...</h3>
-        <p style="color:#666; font-size:12px;">Identificando modelo e cruzando dados</p>
+        <p style="color:#666; font-size:12px;">Verificando Input 5 (Devolvido) vs Input 2 (Base)</p>
     </div>
 
-    <!-- MODAL COBRANÇA -->
     <div id="modalCobranca" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <span><i class="fa-brands fa-whatsapp"></i> Gerar Cobrança</span>
+                <span><i class="fa-brands fa-whatsapp"></i> Gerar Mensagem</span>
                 <span class="close-btn" onclick="fecharModalCobranca()">&times;</span>
             </div>
             <div class="modal-body">
-                <label>Selecione o Motorista:</label>
-                <select id="selMotoristaCobranca" onchange="gerarTextoCobranca()" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+                <label id="lblCobrancaAlvo">Selecione:</label>
+                <select id="selCobrancaTarget" style="width: 100%; padding: 8px; margin-bottom: 10px;">
                     <option value="">-- Selecione --</option>
                 </select>
+                <input type="hidden" id="modoCobranca" value="">
+                
                 <textarea id="txtAreaCobranca"></textarea>
                 <button class="btn-main" style="width: 100%; margin-top: 10px;" onclick="copiarTextoCobranca()">
                     <i class="fa-regular fa-copy"></i> Copiar Texto
@@ -184,78 +184,66 @@
 
     <header>
         <div class="container" style="padding: 0;">
-            <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - V28</h1>
-            <p>Auto-Detecção de Modelo | Gerador de Cobrança | Motorista via Base</p>
+            <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - V41</h1>
+            <p>Status "DEVOLVIDO" exige presença no Input 5 + Data > Ação Rua</p>
         </div>
     </header>
 
     <div class="container">
         
-        <!-- ÁREA DE UPLOAD -->
         <div class="card-upload">
             <div class="input-group">
-                <label>1. Planilha RETIDOS (Auto Detect)</label>
+                <label>1. Planilha RETIDOS (A-R-T)</label>
                 <input type="file" id="fileRetidos" accept=".csv, .xlsx, .xls">
             </div>
             <div class="input-group">
-                <label>2. Base DETALHADA (A/P/R/AD)</label>
+                <label>2. Base DETALHADA (O=Saída, R=Prob)</label>
                 <input type="file" id="fileBase" accept=".csv, .xlsx, .xls">
             </div>
             <div class="input-group">
-                <label>3. Planilha EVOLUÇÃO (A/E/T)</label>
+                <label>3. GESTÃO ENTREGUES (Evolução + Baixa)</label>
                 <input type="file" id="fileEvolucao" accept=".csv, .xlsx, .xls">
+            </div>
+            <div class="input-group">
+                <label>4. COMPLEMENTO (A/E/T/U/V)</label>
+                <input type="file" id="fileComplemento" accept=".csv, .xlsx, .xls">
+            </div>
+            <div class="input-group">
+                <label>5. BIPE DEVOLUÇÃO (Obrigatório p/ Devolvidos)</label>
+                <input type="file" id="fileDevolucao" accept=".csv, .xlsx, .xls">
             </div>
             <button class="btn-main" onclick="tratarClickCarregar()">
                 <i class="fa-solid fa-play"></i> Carregar Tudo
             </button>
         </div>
 
-        <!-- MENSAGEM DE ERRO -->
         <div id="msgErro"></div>
 
-        <!-- NAVEGAÇÃO -->
         <div class="nav-tabs" id="navTabs" style="display:none;">
             <button class="nav-btn active" onclick="mudarAba('ops')"><i class="fa-solid fa-list-check"></i> Painel Operacional</button>
             <button class="nav-btn" onclick="mudarAba('evo')"><i class="fa-solid fa-chart-line"></i> Painel Evolução</button>
         </div>
 
-        <!-- ABA OPERACIONAL -->
         <div id="tabOps" class="tab-content active">
             
-            <!-- FILTROS AVANÇADOS -->
             <div class="filters-bar" style="flex-direction:column; align-items:flex-start;">
-                
                 <div style="display:flex; width:100%; gap:15px; margin-bottom:15px; flex-wrap:wrap;">
-                    <div class="filter-item" style="flex: 1;">
-                        <label>Busca</label>
-                        <input type="text" id="buscaGeral" placeholder="Pedido/Motorista..." onkeyup="aplicarFiltros()">
-                    </div>
-                    
-                    <div class="filter-item">
-                        <label>Dias Retidos</label>
+                    <div class="filter-item" style="flex: 1;"><label>Busca</label><input type="text" id="buscaGeral" placeholder="Pedido/Motorista..." onkeyup="aplicarFiltros()"></div>
+                    <div class="filter-item"><label>Dias Retidos</label>
                         <div class="days-input-group">
-                            <select id="operadorDias" onchange="aplicarFiltros()">
-                                <option value="maior">></option>
-                                <option value="menor"><</option>
-                                <option value="igual">=</option>
-                            </select>
+                            <select id="operadorDias" onchange="aplicarFiltros()"><option value="maior">></option><option value="menor"><</option><option value="igual">=</option></select>
                             <input type="number" id="valorDias" placeholder="Ex: 10" onkeyup="aplicarFiltros()">
                         </div>
                     </div>
-
-                    <div class="filter-item" style="flex: 1;">
-                        <label>Cidade</label>
-                        <select id="filtroCidade" onchange="aplicarFiltros()"><option value="">Todas</option></select>
-                    </div>
-                    <div class="filter-item" style="flex: 1.5;">
-                        <label>Problemática</label>
-                        <select id="filtroProblema" onchange="aplicarFiltros()"><option value="">Todas</option></select>
-                    </div>
+                    <div class="filter-item" style="flex: 1;"><label>Cidade</label><select id="filtroCidade" onchange="aplicarFiltros()"><option value="">Todas</option></select></div>
+                    <div class="filter-item" style="flex: 1.5;"><label>Problemática</label><select id="filtroProblema" onchange="aplicarFiltros()"><option value="">Todas</option></select></div>
+                    <div class="filter-item" style="flex: 1.5;"><label>Status</label><select id="filtroStatus" onchange="aplicarFiltros()"><option value="">Todos</option></select></div>
                 </div>
-
                 <div class="filter-item" style="width:100%;">
-                    <label style="margin-bottom:8px; display:block;">Exibir Status:</label>
+                    <label style="margin-bottom:8px; display:block;">Exibir Grupos:</label>
                     <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="DELIVERED"> 🟢 Já Entregues</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="RETURNED_BASE"> 🟢 Já Devolvidos</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="AUSENCIA_PROCESS"> 🔵 Proc. Ausência</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="AUSENCIA_PLUS"> 🟡 Ausente +1</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="APTO"> 🟢 Aptos</label>
@@ -267,9 +255,10 @@
                 </div>
             </div>
 
-            <!-- KPIs -->
             <div class="kpi-row">
                 <div class="kpi-card border-gray"><h3>Listados</h3><div class="value" id="kpiTotal">0</div></div>
+                <div class="kpi-card border-del"><h3>Já Entregues</h3><div class="value" id="kpiEntregues">0</div></div>
+                <div class="kpi-card border-teal"><h3>Já Devolvidos</h3><div class="value" id="kpiDevolvidos">0</div></div>
                 <div class="kpi-card border-info"><h3>Proc. Ausência</h3><div class="value" id="kpiAusenciaProc">0</div></div>
                 <div class="kpi-card border-gold"><h3>Ausente +1</h3><div class="value" id="kpiAusenciaPlus">0</div></div>
                 <div class="kpi-card border-green"><h3>Aptos Devolução</h3><div class="value" id="kpiApto">0</div></div>
@@ -278,7 +267,6 @@
                 <div class="kpi-card border-purple"><h3>J&T / Outros</h3><div class="value" id="kpiOutros">0</div></div>
             </div>
 
-            <!-- GRID OPERACIONAL -->
             <div class="main-grid">
                 <div class="sidebar">
                     <div class="ranking-card"><div class="ranking-header">Top 10 Cidades</div><div id="listaTopCidades"></div></div>
@@ -288,7 +276,8 @@
                     <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
                         <h3>Listagem de Pedidos</h3>
                         <div>
-                            <button class="btn-action btn-cobranca" onclick="abrirModalCobranca()"><i class="fa-brands fa-whatsapp"></i> 📢 Cobrar Motorista</button>
+                            <button class="btn-action btn-cobranca" onclick="abrirModalCobranca('motorista')"><i class="fa-solid fa-user"></i> Cobrar Motorista</button>
+                            <button class="btn-action btn-city" onclick="abrirModalCobranca('cidade')"><i class="fa-solid fa-city"></i> Cobrar Cidade (Grupo)</button>
                             <button class="btn-action" onclick="copiarCodigos()"><i class="fa-regular fa-copy"></i> Copiar</button>
                             <button class="btn-action btn-excel" onclick="exportarExcel('ops')"><i class="fa-solid fa-file-excel"></i> Exportar</button>
                         </div>
@@ -299,6 +288,7 @@
                                 <th onclick="ordenar('codigo')">Pedido</th>
                                 <th onclick="ordenar('diasRetidos')">Dias</th>
                                 <th onclick="ordenar('statusTxt')">Status</th>
+                                <th onclick="ordenar('destinatario')">Destinatário</th>
                                 <th onclick="ordenar('problema')">Problemática</th>
                                 <th onclick="ordenar('motorista')">Motorista</th>
                                 <th onclick="ordenar('cidade')">Cidade</th>
@@ -310,16 +300,13 @@
             </div>
         </div>
 
-        <!-- ABA EVOLUÇÃO -->
         <div id="tabEvo" class="tab-content">
-            
             <div class="kpi-row" style="grid-template-columns: repeat(4, 1fr);">
                 <div class="kpi-card border-gray"><h3>Base Retidos (Planilha 1)</h3><div class="value" id="evoBaseTotal">0</div></div>
                 <div class="kpi-card border-green"><h3>Recuperados</h3><div class="value" id="evoRecuperados">0</div></div>
                 <div class="kpi-card border-red"><h3>Pendentes</h3><div class="value" id="evoPendentes">0</div></div>
                 <div class="kpi-card border-info"><h3>Eficiência</h3><div class="value" id="evoEficiencia">0%</div></div>
             </div>
-
             <div class="evo-grid">
                 <div class="ranking-card" style="border-top: 4px solid var(--success);">
                     <div class="ranking-header"><i class="fa-solid fa-truck-fast"></i> TOP 5 RECUPERADORES</div>
@@ -330,7 +317,6 @@
                     <div id="evoTopCidades" style="padding: 10px 0;"></div>
                 </div>
             </div>
-
             <div class="table-container">
                 <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
                     <h3>Relatório Evolução</h3>
@@ -341,7 +327,7 @@
                         <tr>
                             <th onclick="ordenarEvo('codigo')">Pedido</th>
                             <th onclick="ordenarEvo('statusEvo')">Situação</th>
-                            <th onclick="ordenarEvo('diasRetidos')">Dias Ret. <i class="fa-solid fa-sort"></i></th>
+                            <th onclick="ordenarEvo('diasRetidos')">Dias Ret.</th>
                             <th onclick="ordenarEvo('motorista')">Motorista</th>
                             <th onclick="ordenarEvo('cidade')">Cidade</th>
                             <th onclick="ordenarEvo('problema')">Problemática</th>
@@ -351,32 +337,23 @@
                 </table>
             </div>
         </div>
-
     </div>
 
-    <!-- SCRIPT LÓGICO -->
     <script>
-        // CONFIGURAÇÃO DOS DOIS MODELOS DE RETIDOS
-        const MODELO_1 = { pedido: 0, motivo: 4, dias: 6 }; // Old: E=Motivo, G=Dias
-        const MODELO_2 = { pedido: 0, dias: 13, motivo: 20 }; // New: N=Dias, U=Motivo
-        
-        // Base (Fixa): A=Pedido, P=Motorista, R=Data, AD=Cidade
-        const IDX_BASE = { pedido: 0, motorista: 15, data: 17, cidade: 29 };
-        
-        const IDX_EVO = { pedido: 0, motorista: 4, cidade: 19 };
+        const IDX_RETIDOS = { pedido: 0, motivo: 17, dias: 19 };
+        const IDX_BASE = { pedido: 0, saida: 14, motorista: 15, problema_time: 17, cidade: 29 };
+        const IDX_COMPLEMENTO = { pedido: 0, motorista: 4, cidade: 19, motivo: 20, destinatario: 21, tsJ: 9, tsQ: 16 };
+        const IDX_DEVOLUCAO = { pedido: 0, data: 4 }; // Confirme se a data está na coluna E (indice 4) da planilha DEVOLVIDO.xlsx
+        const IDX_EVO = { pedido: 0, motorista: 4, cidade: 19 }; 
 
         const REGRA_DIAS = 9;
         const STRINGS_JT = ["aguardando.janela", "退回件待客户审核"];
-        const STRINGS_VERIFY = ["encomenda.expedida", "有发未到件"];
         const TARGET_DRIVERS = ["FRQDO-JHONATAN ALVES SILVA", "FRQDO-FELIPE LOMBRE MUNDIM"];
 
         let dadosRaw = [];
         let dadosFiltrados = [];
         let dadosEvolucaoDetalhados = []; 
         let setRetidosOriginais = new Set(); 
-        
-        // Variável global para armazenar índice ativo
-        let idxRetidosAtivo = MODELO_2; // Padrão
 
         function mudarAba(aba) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -403,7 +380,9 @@
         function tratarClickCarregar() {
             const fRetidos = document.getElementById('fileRetidos').files[0];
             const fBase = document.getElementById('fileBase').files[0];
-            const fEvo = document.getElementById('fileEvolucao').files[0];
+            const fEvo = document.getElementById('fileEvolucao').files[0]; // Input 3 (Entregues + Evolução)
+            const fComp = document.getElementById('fileComplemento').files[0];
+            const fDev = document.getElementById('fileDevolucao').files[0];
             
             const divErro = document.getElementById('msgErro');
             divErro.style.display = 'none'; divErro.innerHTML = '';
@@ -420,15 +399,19 @@
                     const retidos = await lerArquivo(fRetidos);
                     const base = await lerArquivo(fBase);
                     
-                    // AUTO DETECT MODELO RETIDOS
-                    detectarModeloRetidos(retidos);
+                    let entregues = null;
+                    if(fEvo) entregues = await lerArquivo(fEvo); // Ler input 3
 
-                    // Processa
-                    processarLogica(retidos, base);
+                    let complemento = null;
+                    if(fComp) complemento = await lerArquivo(fComp);
 
-                    if(fEvo) {
-                        const evoData = await lerArquivo(fEvo);
-                        processarEvolucao(evoData);
+                    let devolvidos = null;
+                    if(fDev) devolvidos = await lerArquivo(fDev);
+
+                    processarLogica(retidos, base, complemento, devolvidos, entregues);
+
+                    if(entregues) {
+                        processarEvolucao(entregues);
                     } else {
                         dadosEvolucaoDetalhados = [];
                         renderEvolucao({ motoristas: [], cidades: [], kpis: { total: setRetidosOriginais.size, rec: 0, pen: setRetidosOriginais.size } });
@@ -456,43 +439,22 @@
             return String(val).trim().toUpperCase().replace(/[\s\-\.]/g, "");
         }
 
-        // --- DETECÇÃO AUTOMÁTICA ---
-        function detectarModeloRetidos(dados) {
-            if(!dados || dados.length === 0) return;
-            
-            // Olha a primeira linha (cabeçalho)
-            const header = dados[0].map(c => String(c).toLowerCase());
-            
-            // Modelo 1: Dias em G (index 6) ou Motivo em E (index 4)
-            const colE = header[4] || "";
-            const colG = header[6] || "";
-            
-            // Modelo 2: Dias em N (index 13) ou Motivo em U (index 20)
-            const colN = header[13] || "";
-            const colU = header[20] || "";
-
-            // Lógica de Detecção
-            if (colG.includes("dias") || colG.includes("retenção") || colG.includes("duration")) {
-                idxRetidosAtivo = MODELO_1;
-                console.log("Modelo 1 Detectado (Antigo)");
-            } else if (colN.includes("dias") || colN.includes("retidos") || colN.includes("duration")) {
-                idxRetidosAtivo = MODELO_2;
-                console.log("Modelo 2 Detectado (Atual)");
-            } else {
-                // Fallback: Tenta pelo motivo
-                if (colE.includes("tipo") || colE.includes("problema")) {
-                    idxRetidosAtivo = MODELO_1;
-                } else {
-                    idxRetidosAtivo = MODELO_2; // Padrão
-                }
-            }
-        }
-
-        // --- LÓGICA OPERACIONAL ---
-        function processarLogica(retidos, base) {
+        function processarLogica(retidos, base, complemento, devolvidos, entregues) {
             setRetidosOriginais.clear(); 
 
-            // 1. Mapear Base
+            // 1. Mapear Entregues (Input 3)
+            const setEntregues = new Set();
+            if(entregues) {
+                for(let i=1; i < entregues.length; i++) {
+                    const row = entregues[i];
+                    if(row && row.length > 0) {
+                        const code = limparCodigo(row[IDX_EVO.pedido]);
+                        if(code) setEntregues.add(code);
+                    }
+                }
+            }
+
+            // 2. Mapear Base (Backup de Datas)
             const mapBase = new Map();
             for(let i=1; i < base.length; i++) {
                 const linha = base[i];
@@ -500,101 +462,154 @@
                 const rawPed = linha[IDX_BASE.pedido];
                 if (!rawPed) continue;
                 mapBase.set(limparCodigo(rawPed), {
-                    data: linha[IDX_BASE.data],
+                    dataSaida: parseData(linha[IDX_BASE.saida]),
+                    dataProblema: parseData(linha[IDX_BASE.problema_time]),
                     cidade: linha[IDX_BASE.cidade],
-                    motorista: linha[IDX_BASE.motorista] // Coluna P
+                    motorista: linha[IDX_BASE.motorista]
                 });
             }
 
-            const hoje = new Date();
+            // 3. Mapear Complemento (Texto)
+            const mapComp = new Map();
+            if(complemento) {
+                for(let i=1; i < complemento.length; i++) {
+                    const linha = complemento[i];
+                    if (!linha || linha.length === 0) continue;
+                    const rawPed = linha[IDX_COMPLEMENTO.pedido];
+                    if (!rawPed) continue;
+                    mapComp.set(limparCodigo(rawPed), {
+                        motorista: linha[IDX_COMPLEMENTO.motorista],
+                        cidade: linha[IDX_COMPLEMENTO.cidade],
+                        motivo: linha[IDX_COMPLEMENTO.motivo],
+                        destinatario: linha[IDX_COMPLEMENTO.destinatario],
+                        // REMOVIDO USO DE COLUNA J E Q PARA DEFINIR "DEVOLVIDO"
+                        // tsJ: parseData(linha[IDX_COMPLEMENTO.tsJ]),
+                        // tsQ: parseData(linha[IDX_COMPLEMENTO.tsQ])
+                    });
+                }
+            }
+
+            // 4. Mapear Devolvidos (Input 5 - OBRIGATÓRIO)
+            const mapDev = new Map();
+            if(devolvidos) {
+                for(let i=1; i < devolvidos.length; i++) {
+                    const linha = devolvidos[i];
+                    if (!linha || linha.length === 0) continue;
+                    const rawPed = linha[IDX_DEVOLUCAO.pedido];
+                    if (!rawPed) continue;
+                    const dataDev = parseData(linha[IDX_DEVOLUCAO.data]);
+                    if(dataDev) mapDev.set(limparCodigo(rawPed), dataDev);
+                }
+            }
+
             dadosRaw = [];
 
-            // 2. Cruzar usando o Modelo Detectado
+            // 5. Cruzar
             for(let i=1; i < retidos.length; i++) {
                 const linha = retidos[i];
                 if (!linha || linha.length === 0) continue;
-                
-                const rawPed = linha[idxRetidosAtivo.pedido];
-                if (!rawPed) continue;
-
-                const codigo = limparCodigo(rawPed);
+                const codigo = limparCodigo(linha[IDX_RETIDOS.pedido]);
                 if (codigo === "REMESSA" || codigo === "PEDIDO") continue;
 
                 setRetidosOriginais.add(codigo);
 
-                const diasRetidos = parseInt(linha[idxRetidosAtivo.dias]) || 0;
-                let problema = String(linha[idxRetidosAtivo.motivo] || "").trim();
-                
-                const match = mapBase.get(codigo);
-                let cidade = "N/D";
-                let diasProb = 0;
-                let motorista = "N/D";
-
-                if (match) {
-                    if (match.cidade) cidade = match.cidade;
-                    if (match.motorista) motorista = String(match.motorista).trim();
-                    if (match.data) {
-                        const d = parseData(match.data);
-                        if (d && !isNaN(d)) {
-                            const diff = Math.abs(hoje - d);
-                            diasProb = Math.floor(diff / (1000 * 3600 * 24));
-                        }
-                    }
+                let rawDias = linha[IDX_RETIDOS.dias];
+                let diasRetidos = 0;
+                if (typeof rawDias === 'number') diasRetidos = rawDias;
+                else {
+                    const strDias = String(rawDias || "");
+                    const match = strDias.match(/(\d+)/); 
+                    if (match) diasRetidos = parseInt(match[1]);
                 }
 
+                let problema = String(linha[IDX_RETIDOS.motivo] || "").trim();
+                
+                const matchBase = mapBase.get(codigo);
+                const matchComp = mapComp.get(codigo);
+
+                let cidade = "N/D";
+                let motorista = "N/D";
+                let destinatario = "Não Identificado";
+                
+                if(matchComp) {
+                    if (matchComp.motorista) motorista = String(matchComp.motorista).trim();
+                    if (matchComp.cidade) cidade = matchComp.cidade;
+                    if (matchComp.destinatario) destinatario = matchComp.destinatario;
+                    if ((!problema || problema === "Sem motivo") && matchComp.motivo) problema = matchComp.motivo;
+                } else if(matchBase) {
+                    if (matchBase.cidade) cidade = matchBase.cidade;
+                    if (matchBase.motorista) motorista = String(matchBase.motorista).trim();
+                }
+
+                // --- LÓGICA DE STATUS ---
                 let statusIPO = "CHECK_VERIFY";
                 let statusTxt = "VERIFICAR";
                 let statusClass = "status-verify";
                 
-                const probLower = problema.toLowerCase();
-                const motoristaUpper = motorista.toUpperCase();
+                // 1. CHECAGEM DE ENTREGUE
+                if (setEntregues.has(codigo)) {
+                    statusIPO = "DELIVERED";
+                    statusTxt = "JÁ ENTREGUE (BAIXA)";
+                    statusClass = "status-delivered";
+                } else {
+                    // 2. CHECAGEM DE DEVOLUÇÃO (CORRIGIDA)
+                    
+                    // Só é devolvido se ESTIVER no Input 5 (mapDev)
+                    const dataRetornoBase = mapDev.get(codigo); // Data do Input 5
 
-                if (problema === "") {
-                    problema = "Sem motivo";
-                    statusIPO = "VERIFY_DRIVER";
-                    statusTxt = "VERIFICAR COM MOTORISTA";
-                    statusClass = "status-driver";
-                }
-                else if (probLower.includes("recusa.de.recebimento") || probLower.includes("recusa")) {
-                    statusIPO = "APTO";
-                    statusTxt = "APTO DEVOLUÇÃO";
-                    statusClass = "status-apto";
-                }
-                else if (probLower.includes("ausência.do.destinatário") || probLower.includes("ausencia")) {
-                    const isTargetDriver = TARGET_DRIVERS.some(d => motoristaUpper.includes(d));
-                    if (isTargetDriver) {
-                        statusIPO = "AUSENCIA_PROCESS";
-                        statusTxt = "EM PROCESSO DE LANÇAMENTO DE AUSENCIA";
-                        statusClass = "status-ausencia-proc"; 
+                    let devolvidoConfirmado = false;
+
+                    if (dataRetornoBase) { // Apenas se existir no relatório de devolução
+                        const dtSaida = matchBase ? matchBase.dataSaida : null; 
+                        const dtProblema = matchBase ? matchBase.dataProblema : null;
+                        
+                        // Última ação na rua
+                        let ultimaAcaoRua = null;
+                        if (dtSaida && dtProblema) ultimaAcaoRua = dtSaida > dtProblema ? dtSaida : dtProblema;
+                        else ultimaAcaoRua = dtSaida || dtProblema;
+
+                        if (!ultimaAcaoRua) {
+                            devolvidoConfirmado = true; // Tem bip de devolução e nenhuma saída registrada recente
+                        } else {
+                            // Se bip de devolução for MAIOR que a saída, confirma.
+                            if (dataRetornoBase > ultimaAcaoRua) {
+                                devolvidoConfirmado = true;
+                            }
+                        }
+                    }
+
+                    if (devolvidoConfirmado) {
+                        statusIPO = "RETURNED_BASE"; statusTxt = "JÁ DEVOLVIDO"; statusClass = "status-returned";
                     } else {
-                        statusIPO = "AUSENCIA_PLUS";
-                        statusTxt = "AUSENTE - +1 TENTATIVA DE ENTREGA";
-                        statusClass = "status-ausencia-plus"; 
+                        // Lógica Padrão de Status
+                        const pLow = problema.toLowerCase();
+                        const mUp = motorista.toUpperCase();
+
+                        if (!problema || problema === "Sem motivo") {
+                            statusIPO = "VERIFY_DRIVER"; statusTxt = "VERIFICAR COM MOTORISTA"; statusClass = "status-driver";
+                        } else if (pLow.includes("recusa")) {
+                            statusIPO = "APTO"; statusTxt = "APTO DEVOLUÇÃO"; statusClass = "status-apto";
+                        } else if (pLow.includes("ausência") || pLow.includes("ausencia")) {
+                            if (TARGET_DRIVERS.some(d => mUp.includes(d))) {
+                                statusIPO = "AUSENCIA_PROCESS"; statusTxt = "EM PROCESSO DE LANÇAMENTO"; statusClass = "status-ausencia-proc";
+                            } else {
+                                statusIPO = "AUSENCIA_PLUS"; statusTxt = "AUSENTE +1 TENTATIVA"; statusClass = "status-ausencia-plus";
+                            }
+                        } else if (pLow.includes("endereço") || pLow.includes("impossibilidade")) {
+                            statusIPO = "WAIT"; statusTxt = "AGUARDANDO PRAZO"; statusClass = "status-wait";
+                        } else {
+                            if (STRINGS_JT.some(k => pLow.includes(k))) {
+                                statusIPO = "CHECK_JT"; statusTxt = "VERIFICAR COM J&T"; statusClass = "status-jt";
+                            } else if (diasRetidos > REGRA_DIAS) { 
+                                statusIPO = "APTO"; statusTxt = "APTO DEVOLUÇÃO"; statusClass = "status-apto";
+                            } else {
+                                statusIPO = "CHECK_VERIFY"; statusTxt = "VERIFICAR"; statusClass = "status-verify";
+                            }
+                        }
                     }
                 }
-                else if (probLower.includes("endereço.incorreto") || probLower.includes("impossibilidade.de.chegar")) {
-                    statusIPO = "WAIT";
-                    statusTxt = "AGUARDANDO PRAZO";
-                    statusClass = "status-wait";
-                }
-                else {
-                    const isJT = STRINGS_JT.some(key => probLower.includes(key));
-                    if (isJT) {
-                        statusIPO = "CHECK_JT";
-                        statusTxt = "VERIFICAR COM J&T";
-                        statusClass = "status-jt";
-                    } else if (diasProb > REGRA_DIAS) {
-                        statusIPO = "APTO";
-                        statusTxt = "APTO DEVOLUÇÃO";
-                        statusClass = "status-apto";
-                    } else {
-                        statusIPO = "CHECK_VERIFY";
-                        statusTxt = "VERIFICAR";
-                        statusClass = "status-verify";
-                    }
-                }
 
-                dadosRaw.push({ codigo, diasRetidos, problema, cidade, diasProb, motorista, statusIPO, statusTxt, statusClass });
+                dadosRaw.push({ codigo, diasRetidos, problema, cidade, motorista, destinatario, statusIPO, statusTxt, statusClass });
             }
 
             dadosRaw.sort((a, b) => b.diasRetidos - a.diasRetidos);
@@ -604,18 +619,11 @@
 
         // --- LÓGICA EVOLUÇÃO ---
         function processarEvolucao(data) {
-            const countMot = {};
-            const countCid = {};
-            let recuperadosCount = 0;
+            const countMot = {}; const countCid = {}; let recuperadosCount = 0;
             const setRecuperados = new Set();
-
             for(let i=1; i < data.length; i++) {
-                const linha = data[i];
-                if(!linha || linha.length === 0) continue;
-                const rawPed = linha[IDX_EVO.pedido];
-                if(!rawPed) continue;
-                const codigo = limparCodigo(rawPed);
-
+                const linha = data[i]; if(!linha || linha.length === 0) continue;
+                const codigo = limparCodigo(linha[IDX_EVO.pedido]);
                 if (setRetidosOriginais.has(codigo)) {
                     recuperadosCount++;
                     setRecuperados.add(codigo);
@@ -625,122 +633,121 @@
                     if(cid !== "N/D") countCid[cid] = (countCid[cid] || 0) + 1;
                 }
             }
-
             dadosEvolucaoDetalhados = dadosRaw.map(r => {
                 const entregue = setRecuperados.has(r.codigo);
-                return {
-                    codigo: r.codigo,
-                    motorista: r.motorista, 
-                    cidade: r.cidade,
-                    problema: r.problema,
-                    diasRetidos: r.diasRetidos,
-                    statusEvo: entregue ? "ENTREGUE" : "PENDENTE",
-                    classeEvo: entregue ? "evo-ok" : "evo-pend"
-                };
+                return { codigo: r.codigo, motorista: r.motorista, cidade: r.cidade, problema: r.problema, diasRetidos: r.diasRetidos, statusEvo: entregue ? "ENTREGUE" : "PENDENTE", classeEvo: entregue ? "evo-ok" : "evo-pend" };
             });
-
-            dadosEvolucaoDetalhados.sort((a,b) => {
-                if (a.statusEvo !== b.statusEvo) return a.statusEvo === "PENDENTE" ? -1 : 1;
-                return b.diasRetidos - a.diasRetidos;
-            });
-
+            dadosEvolucaoDetalhados.sort((a,b) => (a.statusEvo === b.statusEvo) ? b.diasRetidos - a.diasRetidos : (a.statusEvo === "PENDENTE" ? -1 : 1));
             const topMot = Object.entries(countMot).sort((a,b) => b[1] - a[1]).slice(0, 5);
             const topCid = Object.entries(countCid).sort((a,b) => b[1] - a[1]).slice(0, 5);
-
-            renderEvolucao({ 
-                motoristas: topMot, cidades: topCid,
-                kpis: { total: setRetidosOriginais.size, rec: recuperadosCount, pen: setRetidosOriginais.size - recuperadosCount }
-            });
+            renderEvolucao({ motoristas: topMot, cidades: topCid, kpis: { total: setRetidosOriginais.size, rec: recuperadosCount, pen: setRetidosOriginais.size - recuperadosCount } });
             renderTabelaEvo();
         }
 
-        // --- MODAL COBRANÇA ---
-        function abrirModalCobranca() {
-            // Popula o select com motoristas da lista atual
-            const motoristas = [...new Set(dadosRaw.map(d => d.motorista))].filter(m => m && m !== "N/D").sort();
-            const sel = document.getElementById('selMotoristaCobranca');
-            sel.innerHTML = '<option value="">-- Selecione o Motorista --</option>';
-            
-            motoristas.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m;
-                opt.innerText = m;
-                sel.appendChild(opt);
-            });
+        // --- MENSAGENS E MODAL ---
+        function abrirModalCobranca(modo) {
+            document.getElementById('modoCobranca').value = modo;
+            const sel = document.getElementById('selCobrancaTarget');
+            const lbl = document.getElementById('lblCobrancaAlvo');
+            const txt = document.getElementById('txtAreaCobranca');
+            sel.innerHTML = '<option value="">-- Selecione --</option>';
+            txt.value = "";
 
+            if (modo === 'motorista') {
+                lbl.innerText = "Selecione o Motorista:";
+                const motoristas = [...new Set(dadosRaw.map(d => d.motorista))].filter(m => m && m !== "N/D").sort();
+                motoristas.forEach(m => sel.innerHTML += `<option value="${m}">${m}</option>`);
+            } else {
+                lbl.innerText = "Selecione a Cidade:";
+                const cidades = [...new Set(dadosRaw.map(d => d.cidade))].filter(c => c && c !== "N/D").sort();
+                cidades.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`);
+            }
+            sel.onchange = function() { if(modo === 'motorista') gerarTextoCobrancaMotorista(); else gerarTextoCobrancaCidade(); };
             document.getElementById('modalCobranca').style.display = 'flex';
-            document.getElementById('txtAreaCobranca').value = "";
         }
 
-        function fecharModalCobranca() {
-            document.getElementById('modalCobranca').style.display = 'none';
-        }
+        function fecharModalCobranca() { document.getElementById('modalCobranca').style.display = 'none'; }
 
-        function gerarTextoCobranca() {
-            const motorista = document.getElementById('selMotoristaCobranca').value;
+        function gerarTextoCobrancaMotorista() {
+            const motorista = document.getElementById('selCobrancaTarget').value;
             if(!motorista) return;
-
-            // Filtra os pacotes do motorista que NÃO estão Aptos/Entregues (apenas pendencias reais)
             const pendencias = dadosRaw.filter(d => 
                 d.motorista === motorista && 
-                d.statusIPO !== 'APTO' // Se quiser cobrar tudo, remova essa linha
+                d.statusIPO !== 'APTO' && 
+                d.statusIPO !== 'RETURNED_BASE' &&
+                d.statusIPO !== 'DELIVERED' // Ignora já entregues
             );
-
-            if(pendencias.length === 0) {
-                document.getElementById('txtAreaCobranca').value = "Nenhuma pendência encontrada para este motorista.";
-                return;
-            }
-
-            let texto = `*OLÁ ${motorista}!*\n\nConstam *${pendencias.length}* pacotes pendentes de regularização na sua conta:\n\n`;
-
-            pendencias.forEach(p => {
-                texto += `📦 *${p.codigo}* (${p.diasRetidos} dias)\⚠️ ${p.problema}\n📍 ${p.cidade}\n\n`;
-            });
-
-            texto += "Favor regularizar o quanto antes.";
+            if(pendencias.length === 0) { document.getElementById('txtAreaCobranca').value = "Nenhuma pendência."; return; }
+            let texto = `*OLÁ ${motorista}!*\n\nConstam *${pendencias.length}* pacotes pendentes:\n\n`;
+            pendencias.forEach(p => texto += `📦 *${p.codigo}* (${p.diasRetidos} dias)\n👤 ${p.destinatario}\n⚠️ ${p.problema}\n📍 ${p.cidade}\n\n`);
+            texto += "Favor regularizar.";
             document.getElementById('txtAreaCobranca').value = texto;
         }
 
-        function copiarTextoCobranca() {
-            const txt = document.getElementById('txtAreaCobranca');
-            txt.select();
-            document.execCommand('copy');
-            alert("Texto copiado para a área de transferência!");
+        function gerarTextoCobrancaCidade() {
+            const cidade = document.getElementById('selCobrancaTarget').value;
+            if(!cidade) return;
+            
+            // FILTRO NOVO: Apenas >= 3 dias E não Entregue/Devolvido
+            const pendencias = dadosRaw.filter(d => 
+                d.cidade === cidade && 
+                d.statusIPO !== 'APTO' && 
+                d.statusIPO !== 'RETURNED_BASE' &&
+                d.statusIPO !== 'DELIVERED' && 
+                d.diasRetidos >= 3
+            );
+
+            if(pendencias.length === 0) {
+                document.getElementById('txtAreaCobranca').value = "Nenhuma pendência acima de 3 dias nesta cidade.";
+                return;
+            }
+
+            const porMotorista = {};
+            pendencias.forEach(p => {
+                const mot = p.motorista || "SEM MOTORISTA";
+                if(!porMotorista[mot]) porMotorista[mot] = [];
+                porMotorista[mot].push(p);
+            });
+
+            let texto = `🚨 *COBRANÇA DE PENDÊNCIAS - ${cidade.toUpperCase()}* 🚨\n\n`;
+            texto += `⚠️ *ATENÇÃO:* Pedidos acima de *5 dias* retidos são extraviados automaticamente pela J&T!\n`;
+            texto += `Peço *urgência* na verificação destes casos.\n\n`;
+            texto += `--------------------------------\n\n`;
+
+            Object.keys(porMotorista).sort().forEach(mot => {
+                const lista = porMotorista[mot];
+                texto += `👤 *${mot}*\n`;
+                lista.forEach(p => {
+                    texto += `📦 ${p.codigo} (*${p.diasRetidos} dias*) - ${p.destinatario.substring(0, 25)}\n`;
+                });
+                texto += `\n`;
+            });
+
+            texto += `--------------------------------\n`;
+            texto += `❓ *Qualquer dúvida, consultar a base.*`;
+
+            document.getElementById('txtAreaCobranca').value = texto;
         }
 
-        // UTILS, FILTROS E RENDER (Mantidos iguais ao V27)
-        function renderEvolucao(dados) {
-            const elMot = document.getElementById('evoTopMotoristas');
-            const elCid = document.getElementById('evoTopCidades');
-            const k = dados.kpis;
-            document.getElementById('evoBaseTotal').innerText = k.total;
-            document.getElementById('evoRecuperados').innerText = k.rec;
-            document.getElementById('evoPendentes').innerText = k.pen;
-            const eff = k.total > 0 ? ((k.rec / k.total) * 100).toFixed(1) : 0;
-            document.getElementById('evoEficiencia').innerText = eff + "%";
-            elMot.innerHTML = ""; elCid.innerHTML = "";
-            if(!dados.motoristas || dados.motoristas.length === 0) {
-                const msg = "<div style='color:#999; text-align:center; padding:20px'>Sem dados</div>"; elMot.innerHTML = msg; elCid.innerHTML = msg; return;
-            }
-            const maxMot = dados.motoristas[0][1];
-            dados.motoristas.forEach(([nome, qtd], idx) => {
-                const pct = (qtd / maxMot) * 100;
-                elMot.innerHTML += `<div class="rank-row"><div style="font-weight:bold; width:20px; color:#555;">#${idx+1}</div><div class="rank-name" style="width:50%" title="${nome}">${nome}</div><div class="rank-bar-container"><div class="rank-bar bar-green" style="width: ${pct}%"></div></div><div class="rank-count">${qtd}</div></div>`;
-            });
-            const maxCid = dados.cidades[0][1];
-            dados.cidades.forEach(([nome, qtd], idx) => {
-                const pct = (qtd / maxCid) * 100;
-                elCid.innerHTML += `<div class="rank-row"><div style="font-weight:bold; width:20px; color:#555;">#${idx+1}</div><div class="rank-name" style="width:50%" title="${nome}">${nome}</div><div class="rank-bar-container"><div class="rank-bar bar-blue" style="width: ${pct}%"></div></div><div class="rank-count">${qtd}</div></div>`;
-            });
+        function copiarTextoCobranca() { document.getElementById('txtAreaCobranca').select(); document.execCommand('copy'); alert("Copiado!"); }
+
+        // --- UTILS ---
+        function renderEvolucao(d) {
+            document.getElementById('evoBaseTotal').innerText = d.kpis.total;
+            document.getElementById('evoRecuperados').innerText = d.kpis.rec;
+            document.getElementById('evoPendentes').innerText = d.kpis.pen;
+            document.getElementById('evoEficiencia').innerText = (d.kpis.total > 0 ? ((d.kpis.rec / d.kpis.total)*100).toFixed(1) : 0) + "%";
+            const elMot = document.getElementById('evoTopMotoristas'); elMot.innerHTML = "";
+            const elCid = document.getElementById('evoTopCidades'); elCid.innerHTML = "";
+            if(d.motoristas.length > 0) { const max = d.motoristas[0][1]; d.motoristas.forEach(([n,q], i) => elMot.innerHTML += `<div class="rank-row"><div class="rank-name">#${i+1} ${n}</div><div class="rank-bar-container"><div class="rank-bar bar-green" style="width:${(q/max)*100}%"></div></div><div class="rank-count">${q}</div></div>`); }
+            if(d.cidades.length > 0) { const max = d.cidades[0][1]; d.cidades.forEach(([n,q], i) => elCid.innerHTML += `<div class="rank-row"><div class="rank-name">#${i+1} ${n}</div><div class="rank-bar-container"><div class="rank-bar bar-blue" style="width:${(q/max)*100}%"></div></div><div class="rank-count">${q}</div></div>`); }
         }
         function renderTabelaEvo() {
-            const tbody = document.getElementById('tbodyEvo');
-            tbody.innerHTML = "";
-            const lista = dadosEvolucaoDetalhados.slice(0, 500); 
-            lista.forEach(r => {
+            const tb = document.getElementById('tbodyEvo'); tb.innerHTML = "";
+            dadosEvolucaoDetalhados.slice(0,500).forEach(r => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${r.codigo}</td><td class="${r.classeEvo}">${r.statusEvo}</td><td style="font-weight:bold; text-align:center;">${r.diasRetidos}</td><td>${r.motorista}</td><td>${r.cidade}</td><td style="font-size:11px; color:#777;">${r.problema}</td>`;
-                tbody.appendChild(tr);
+                tr.innerHTML = `<td>${r.codigo}</td><td class="${r.classeEvo}">${r.statusEvo}</td><td>${r.diasRetidos}</td><td>${r.motorista}</td><td>${r.cidade}</td><td style="font-size:11px">${r.problema}</td>`;
+                tb.appendChild(tr);
             });
         }
         function parseData(val) {
@@ -749,136 +756,98 @@
             if (typeof val === 'number') return new Date(Math.round((val - 25569) * 86400 * 1000));
             if (typeof val === 'string') {
                 if (val.match(/^\d{4}-\d{2}-\d{2}/)) return new Date(val);
-                if (val.includes('/')) {
-                    const parts = val.split(' ')[0].split('/');
-                    if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
-                }
+                if (val.includes('/')) { const p = val.split(' ')[0].split('/'); if(p.length===3) return new Date(p[2], p[1]-1, p[0]); }
+                if (val.includes(':')) return new Date(val);
             }
             return new Date(val);
         }
         function popularFiltrosAuxiliares() {
-            const cidades = [...new Set(dadosRaw.map(d => d.cidade))].filter(c => c && c !== "N/D").sort();
-            const problemas = [...new Set(dadosRaw.map(d => d.problema))].filter(p => p).sort();
-            const selCidade = document.getElementById('filtroCidade');
-            const selProb = document.getElementById('filtroProblema');
-            selCidade.innerHTML = '<option value="">Todas</option>';
-            selProb.innerHTML = '<option value="">Todas</option>';
-            cidades.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.innerText = c; selCidade.appendChild(opt); });
-            problemas.forEach(p => { const opt = document.createElement('option'); opt.value = p; opt.innerText = p.length > 60 ? p.substring(0,60)+"..." : p; selProb.appendChild(opt); });
+            const c = new Set(), p = new Set(), s = new Set();
+            dadosRaw.forEach(d => { if(d.cidade!=="N/D") c.add(d.cidade); if(d.problema) p.add(d.problema); if(d.statusTxt) s.add(d.statusTxt); });
+            const selC = document.getElementById('filtroCidade'), selP = document.getElementById('filtroProblema'), selS = document.getElementById('filtroStatus');
+            selC.innerHTML = '<option value="">Todas</option>'; Array.from(c).sort().forEach(x => selC.innerHTML+=`<option value="${x}">${x}</option>`);
+            selP.innerHTML = '<option value="">Todas</option>'; Array.from(p).sort().forEach(x => selP.innerHTML+=`<option value="${x}">${x.substring(0,60)}</option>`);
+            selS.innerHTML = '<option value="">Todos</option>'; Array.from(s).sort().forEach(x => selS.innerHTML+=`<option value="${x}">${x}</option>`);
         }
         function aplicarFiltros() {
             const busca = document.getElementById('buscaGeral').value.toLowerCase();
-            const cityFilter = document.getElementById('filtroCidade').value;
-            const probFilter = document.getElementById('filtroProblema').value;
-            const opDias = document.getElementById('operadorDias').value;
-            const valDias = document.getElementById('valorDias').value;
-            const checkedStatus = Array.from(document.querySelectorAll('.checkbox-item input:checked')).map(cb => cb.value);
+            const fC = document.getElementById('filtroCidade').value, fP = document.getElementById('filtroProblema').value, fS = document.getElementById('filtroStatus').value;
+            const opD = document.getElementById('operadorDias').value, vD = document.getElementById('valorDias').value;
+            const chk = Array.from(document.querySelectorAll('.checkbox-item input:checked')).map(x => x.value);
             dadosFiltrados = dadosRaw.filter(d => {
-                const matchTxt = d.codigo.toLowerCase().includes(busca) || d.motorista.toLowerCase().includes(busca);
-                const matchCity = cityFilter ? d.cidade === cityFilter : true;
-                const matchProb = probFilter ? d.problema === probFilter : true;
-                const matchSt = checkedStatus.includes(d.statusIPO);
-                let matchDias = true;
-                if(valDias !== "") {
-                    const v = parseInt(valDias);
-                    if(opDias === "maior") matchDias = d.diasRetidos > v;
-                    else if(opDias === "menor") matchDias = d.diasRetidos < v;
-                    else if(opDias === "igual") matchDias = d.diasRetidos === v;
-                }
-                return matchTxt && matchSt && matchCity && matchProb && matchDias;
+                const txt = d.codigo.toLowerCase().includes(busca) || d.motorista.toLowerCase().includes(busca);
+                const st = chk.includes(d.statusIPO);
+                const city = fC ? d.cidade === fC : true;
+                const prob = fP ? d.problema === fP : true;
+                const stat = fS ? d.statusTxt === fS : true;
+                let dias = true;
+                if(vD !== "") { const v = parseInt(vD); dias = opD==="maior" ? d.diasRetidos > v : (opD==="menor" ? d.diasRetidos < v : d.diasRetidos === v); }
+                return txt && st && city && prob && stat && dias;
             });
-            atualizarKPIs();
-            renderTabela();
-            renderTopLists();
+            atualizarKPIs(); renderTabela(); renderTopLists();
         }
         function atualizarKPIs() {
-            setKPI('kpiTotal', dadosFiltrados.length);
-            setKPI('kpiAusenciaProc', dadosFiltrados.filter(d => d.statusIPO === 'AUSENCIA_PROCESS').length);
-            setKPI('kpiAusenciaPlus', dadosFiltrados.filter(d => d.statusIPO === 'AUSENCIA_PLUS').length);
-            setKPI('kpiApto', dadosFiltrados.filter(d => d.statusIPO === 'APTO').length);
-            setKPI('kpiWait', dadosFiltrados.filter(d => d.statusIPO === 'WAIT').length);
-            setKPI('kpiDriver', dadosFiltrados.filter(d => d.statusIPO === 'VERIFY_DRIVER').length);
-            setKPI('kpiOutros', dadosFiltrados.filter(d => ['CHECK_JT', 'CHECK_VERIFY'].includes(d.statusIPO)).length);
+            const setK = (id, fn) => document.getElementById(id).innerText = dadosFiltrados.filter(fn).length;
+            document.getElementById('kpiTotal').innerText = dadosFiltrados.length;
+            setK('kpiEntregues', d => d.statusIPO === 'DELIVERED');
+            setK('kpiDevolvidos', d => d.statusIPO === 'RETURNED_BASE');
+            setK('kpiAusenciaProc', d => d.statusIPO === 'AUSENCIA_PROCESS');
+            setK('kpiAusenciaPlus', d => d.statusIPO === 'AUSENCIA_PLUS');
+            setK('kpiApto', d => d.statusIPO === 'APTO');
+            setK('kpiWait', d => d.statusIPO === 'WAIT');
+            setK('kpiDriver', d => d.statusIPO === 'VERIFY_DRIVER');
+            setK('kpiOutros', d => ['CHECK_JT', 'CHECK_VERIFY'].includes(d.statusIPO));
         }
-        function setKPI(id, val) { const el = document.getElementById(id); if(el) el.innerText = val; }
         function renderTabela() {
-            const tbody = document.getElementById('tbody');
-            tbody.innerHTML = "";
-            const lista = dadosFiltrados.slice(0, 500);
-            lista.forEach(r => {
+            const tb = document.getElementById('tbody'); tb.innerHTML = "";
+            dadosFiltrados.slice(0,500).forEach(r => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td><b>${r.codigo}</b></td><td style="font-weight:bold;">${r.diasRetidos}</td><td><span class="badge ${r.statusClass}">${r.statusTxt}</span></td><td style="font-size:12px; color:#555;">${r.problema}</td><td style="font-size:11px;">${r.motorista}</td><td>${r.cidade}</td>`;
-                tbody.appendChild(tr);
+                tr.innerHTML = `<td><b>${r.codigo}</b></td><td style="font-weight:bold;">${r.diasRetidos}</td><td><span class="badge ${r.statusClass}">${r.statusTxt}</span></td><td style="font-size:11px">${r.destinatario.substring(0,20)}</td><td style="font-size:12px">${r.problema}</td><td style="font-size:11px">${r.motorista}</td><td>${r.cidade}</td>`;
+                tb.appendChild(tr);
             });
         }
         function renderTopLists() {
-            renderRank('listaTopCidades', 'cidade', 'bar-blue');
-            renderRank('listaTopProblemas', 'problema', 'bar-red');
+            const render = (id, k, cl) => {
+                const c = {}; dadosFiltrados.forEach(d => c[d[k]||"N/D"] = (c[d[k]||"N/D"]||0)+1);
+                const s = Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,10);
+                const el = document.getElementById(id); el.innerHTML = "";
+                if(s.length===0) el.innerHTML="<div style='text-align:center;color:#999'>Sem dados</div>";
+                else { const max = s[0][1]; s.forEach(([n,q]) => el.innerHTML+=`<div class="rank-row"><div class="rank-name" title="${n}">${n}</div><div class="rank-bar-container"><div class="rank-bar ${cl}" style="width:${(q/max)*100}%"></div></div><div class="rank-count">${q}</div></div>`); }
+            };
+            render('listaTopCidades', 'cidade', 'bar-blue');
+            render('listaTopProblemas', 'problema', 'bar-red');
         }
-        function renderRank(elId, key, colorClass) {
-            const container = document.getElementById(elId);
-            container.innerHTML = "";
-            const counts = {};
-            dadosFiltrados.forEach(d => {
-                const val = d[key] || "N/D";
-                counts[val] = (counts[val] || 0) + 1;
-            });
-            const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
-            if (sorted.length === 0) { container.innerHTML = "<div style='color:#999; text-align:center;'>Sem dados</div>"; return; }
-            const max = sorted[0][1];
-            sorted.forEach(([nome, qtd]) => {
-                const pct = (qtd / max) * 100;
-                container.innerHTML += `<div class="rank-row"><div class="rank-name" title="${nome}">${nome}</div><div class="rank-bar-container"><div class="rank-bar ${colorClass}" style="width: ${pct}%"></div></div><div class="rank-count">${qtd}</div></div>`;
-            });
-        }
-        let sortDir = 'desc';
-        function ordenar(key) {
-            sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+        let sDir = 'desc';
+        function ordenar(k) {
+            sDir = sDir==='asc'?'desc':'asc';
             dadosFiltrados.sort((a,b) => {
-                let vA = a[key], vB = b[key];
-                if(typeof vA === 'string') { vA = vA.toLowerCase(); vB = vB.toLowerCase(); }
-                if(vA < vB) return sortDir === 'asc' ? -1 : 1;
-                if(vA > vB) return sortDir === 'asc' ? 1 : -1;
-                return 0;
+                let vA = a[k], vB = b[k]; if(typeof vA==='string'){vA=vA.toLowerCase();vB=vB.toLowerCase();}
+                return (vA < vB ? -1 : 1) * (sDir==='asc'?1:-1);
             });
             renderTabela();
         }
-        let sortDirEvo = 'desc';
-        function ordenarEvo(key) {
-            sortDirEvo = sortDirEvo === 'asc' ? 'desc' : 'asc';
+        let sDirE = 'desc';
+        function ordenarEvo(k) {
+            sDirE = sDirE==='asc'?'desc':'asc';
             dadosEvolucaoDetalhados.sort((a,b) => {
-                let vA = a[key], vB = b[key];
-                if(typeof vA === 'string') { vA = vA.toLowerCase(); vB = vB.toLowerCase(); }
-                if(vA < vB) return sortDirEvo === 'asc' ? -1 : 1;
-                if(vA > vB) return sortDirEvo === 'asc' ? 1 : -1;
-                return 0;
+                let vA = a[k], vB = b[k]; if(typeof vA==='string'){vA=vA.toLowerCase();vB=vB.toLowerCase();}
+                return (vA < vB ? -1 : 1) * (sDirE==='asc'?1:-1);
             });
             renderTabelaEvo();
         }
         function copiarCodigos() {
-            if (dadosFiltrados.length === 0) { alert("Nenhum pedido filtrado."); return; }
-            const codigos = dadosFiltrados.map(d => d.codigo).join("\n");
-            const textArea = document.createElement("textarea");
-            textArea.value = codigos;
-            document.body.appendChild(textArea);
-            textArea.select();
-            try { document.execCommand('copy'); alert(dadosFiltrados.length + " códigos copiados!"); } 
-            catch (err) { alert("Erro ao copiar."); }
-            document.body.removeChild(textArea);
+            if(dadosFiltrados.length===0) { alert("Vazio!"); return; }
+            const t = document.createElement("textarea"); t.value = dadosFiltrados.map(d=>d.codigo).join("\n");
+            document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
+            alert("Códigos copiados!");
         }
-        function exportarExcel(tipo) {
-            let data, nome;
-            if(tipo === 'ops') {
-                data = dadosFiltrados.map(d => ({ "Pedido": d.codigo, "Dias Retidos": d.diasRetidos, "Status": d.statusTxt, "Motivo": d.problema, "Motorista": d.motorista, "Cidade": d.cidade }));
-                nome = "Relatorio_Operacional.xlsx";
-            } else {
-                data = dadosEvolucaoDetalhados.map(d => ({ "Pedido": d.codigo, "Situação": d.statusEvo, "Dias Retidos": d.diasRetidos, "Motorista (Ret)": d.motorista, "Cidade": d.cidade, "Problema": d.problema }));
-                nome = "Relatorio_Evolucao.xlsx";
-            }
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Dados");
-            XLSX.writeFile(wb, nome);
+        function exportarExcel(type) {
+            const dt = type==='ops' 
+                ? dadosFiltrados.map(d => ({ "Pedido": d.codigo, "Dias": d.diasRetidos, "Status": d.statusTxt, "Motivo": d.problema, "Motorista": d.motorista, "Cidade": d.cidade, "Destinatario": d.destinatario }))
+                : dadosEvolucaoDetalhados.map(d => ({ "Pedido": d.codigo, "Situação": d.statusEvo, "Dias Retidos": d.diasRetidos, "Motorista (Ret)": d.motorista, "Cidade": d.cidade, "Problema": d.problema }));
+            const ws = XLSX.utils.json_to_sheet(dt);
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Dados");
+            XLSX.writeFile(wb, type==='ops'?"Relatorio_Operacional.xlsx":"Relatorio_Evolucao.xlsx");
         }
     </script>
 </body>
