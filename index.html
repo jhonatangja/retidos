@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard J&T - V41 (Correção Rigorosa Devolução)</title>
+    <title>Dashboard J&T - Pacotes Retidos (V6)</title>
     
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -19,6 +19,7 @@
             --dark: #343a40;
             --teal: #009688;
             --delivered: #218838;
+            --ativo: #e83e8c;
             --bg: #f4f6f9;
             --text: #333;
         }
@@ -38,24 +39,14 @@
         .card-upload {
             background: white; padding: 20px; border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px;
-            display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; align-items: flex-end;
             border-top: 4px solid var(--secondary);
         }
-        .input-group { flex: 1; min-width: 200px; }
         .input-group label { display: block; font-weight: 700; margin-bottom: 8px; color: #555; font-size: 11px; text-transform: uppercase; }
         .input-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
         
-        .btn-main { background: var(--secondary); color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-main { background: var(--secondary); color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; white-space: nowrap; height: 37px;}
         .btn-main:hover { background: #004494; }
-
-        /* ABAS */
-        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
-        .nav-btn {
-            background: none; border: none; padding: 10px 20px; cursor: pointer;
-            font-size: 16px; font-weight: 600; color: #777; border-radius: 4px; transition: 0.2s;
-        }
-        .nav-btn:hover { background: #e9ecef; color: #333; }
-        .nav-btn.active { background: var(--secondary); color: white; }
 
         #msgErro {
             background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;
@@ -63,20 +54,18 @@
         }
 
         /* KPIs */
-        .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 20px; }
         .kpi-card { background: white; padding: 15px; border-radius: 6px; border-left: 5px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .kpi-card h3 { font-size: 10px; text-transform: uppercase; color: #777; margin-bottom: 5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .kpi-card .value { font-size: 22px; font-weight: 800; color: #333; }
         
         .border-purple { border-left-color: var(--purple); }
-        .border-orange { border-left-color: var(--warning); }
+        .border-ativo { border-left-color: var(--ativo); }
         .border-green { border-left-color: var(--success); }
         .border-red { border-left-color: var(--primary); }
         .border-info { border-left-color: var(--info); }
         .border-dark { border-left-color: var(--dark); }
-        .border-teal { border-left-color: var(--teal); }
         .border-del { border-left-color: var(--delivered); }
-        .border-gray { border-left-color: #6c757d; }
 
         /* FILTROS */
         .filters-bar { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
@@ -89,15 +78,14 @@
         .days-input-group input { width: 80px; }
 
         .checkbox-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .checkbox-item { display: flex; align-items: center; gap: 5px; font-size: 13px; background: #f1f3f5; padding: 5px 10px; border-radius: 15px; cursor: pointer; }
+        .checkbox-item { display: flex; align-items: center; gap: 5px; font-size: 12px; background: #f1f3f5; padding: 5px 10px; border-radius: 15px; cursor: pointer; }
         .checkbox-item input { width: auto; margin: 0; cursor: pointer; }
 
         .main-grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
-        .evo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        @media (max-width: 900px) { .main-grid, .evo-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
 
-        .ranking-card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 100%; }
-        .ranking-header { font-weight: bold; color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 16px; display:flex; align-items:center; gap:8px;}
+        .ranking-card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom:20px; height: auto; }
+        .ranking-header { font-weight: bold; color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 16px; }
         .rank-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 13px; }
         .rank-name { font-weight: 600; color: #555; width: 50%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .rank-bar-container { flex: 1; background: #f1f1f1; height: 8px; border-radius: 4px; margin: 0 10px; overflow: hidden; }
@@ -107,85 +95,46 @@
         .bar-red { background: var(--primary); }
 
         .table-container { background: white; border-radius: 8px; overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1000px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1000px; }
         th { background: #f1f3f5; padding: 12px; text-align: left; color: #495057; font-weight: 700; cursor: pointer; border-bottom: 2px solid #dee2e6; }
         th:hover { background: #e2e6ea; }
         td { padding: 10px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
         tr:hover { background-color: #f8f9fa; }
 
-        .badge { padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 10px; color: white; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge { padding: 5px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; color: white; display: inline-block; text-transform: uppercase; }
         .status-apto { background-color: var(--success); }
-        .status-jt { background-color: var(--purple); }     
         .status-verify { background-color: var(--warning); } 
         .status-wait { background-color: var(--primary); }
         .status-ausencia-proc { background-color: var(--info); }
-        .status-ausencia-plus { background-color: var(--gold); color: white; }
         .status-driver { background-color: var(--dark); }
-        .status-returned { background-color: var(--teal); } 
         .status-delivered { background-color: var(--delivered); }
-        .evo-ok { color: var(--success); font-weight: bold; }
-        .evo-pend { color: var(--primary); font-weight: bold; }
+        .status-fazer-ativo { background-color: var(--ativo); }
+        .status-descarte { background-color: #000; color: #fff; }
+        .status-impressa { background-color: var(--purple); color: #fff; } /* NOVO STATUS */
+        
+        .info-pill { background: #e9ecef; color: #495057; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; white-space: nowrap; border: 1px solid #ced4da; }
 
         .btn-action { background: #17a2b8; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 5px; }
         .btn-excel { background: #218838; }
-        .btn-cobranca { background: #fd7e14; color: white; font-weight: bold; }
-        .btn-city { background: #6f42c1; color: white; font-weight: bold; }
 
-        /* MODAL */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 10000;
-            display: none; justify-content: center; align-items: center;
-        }
-        .modal-content {
-            background: white; padding: 25px; border-radius: 8px; width: 600px; max-width: 90%;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; }
-        .close-btn { cursor: pointer; color: #aaa; font-size: 20px; }
-        .modal-body textarea { width: 100%; height: 350px; padding: 10px; margin-top: 10px; border: 1px solid #ccc; border-radius: 4px; resize: none; font-family: monospace; font-size: 12px; }
-        
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--secondary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .hidden { display: none !important; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
     </style>
 </head>
 <body>
 
     <div id="loadingOverlay" class="hidden">
         <div class="spinner"></div>
-        <h3>Processando...</h3>
-        <p style="color:#666; font-size:12px;">Verificando Input 5 (Devolvido) vs Input 2 (Base)</p>
-    </div>
-
-    <div id="modalCobranca" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span><i class="fa-brands fa-whatsapp"></i> Gerar Mensagem</span>
-                <span class="close-btn" onclick="fecharModalCobranca()">&times;</span>
-            </div>
-            <div class="modal-body">
-                <label id="lblCobrancaAlvo">Selecione:</label>
-                <select id="selCobrancaTarget" style="width: 100%; padding: 8px; margin-bottom: 10px;">
-                    <option value="">-- Selecione --</option>
-                </select>
-                <input type="hidden" id="modoCobranca" value="">
-                
-                <textarea id="txtAreaCobranca"></textarea>
-                <button class="btn-main" style="width: 100%; margin-top: 10px;" onclick="copiarTextoCobranca()">
-                    <i class="fa-regular fa-copy"></i> Copiar Texto
-                </button>
-            </div>
-        </div>
+        <h3>Analisando Dados...</h3>
+        <p style="color:#666; font-size:12px;">Cruzando os relatórios e validando as etiquetas impressas</p>
     </div>
 
     <header>
         <div class="container" style="padding: 0;">
-            <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - V41</h1>
-            <p>Status "DEVOLVIDO" exige presença no Input 5 + Data > Ação Rua</p>
+            <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - Retidos & Problemáticos (V6)</h1>
+            <p>Com reconhecimento de Etiquetas Impressas para evitar retrabalho na devolução.</p>
         </div>
     </header>
 
@@ -193,103 +142,89 @@
         
         <div class="card-upload">
             <div class="input-group">
-                <label>1. Planilha RETIDOS (A-R-T)</label>
+                <label>1. Mestre Retidos</label>
                 <input type="file" id="fileRetidos" accept=".csv, .xlsx, .xls">
             </div>
             <div class="input-group">
-                <label>2. Base DETALHADA (O=Saída, R=Prob)</label>
+                <label>2. Gestão de Base</label>
                 <input type="file" id="fileBase" accept=".csv, .xlsx, .xls">
             </div>
             <div class="input-group">
-                <label>3. GESTÃO ENTREGUES (Evolução + Baixa)</label>
-                <input type="file" id="fileEvolucao" accept=".csv, .xlsx, .xls">
+                <label>3. Problemáticos</label>
+                <input type="file" id="fileProb" accept=".csv, .xlsx, .xls">
             </div>
             <div class="input-group">
-                <label>4. COMPLEMENTO (A/E/T/U/V)</label>
-                <input type="file" id="fileComplemento" accept=".csv, .xlsx, .xls">
-            </div>
-            <div class="input-group">
-                <label>5. BIPE DEVOLUÇÃO (Obrigatório p/ Devolvidos)</label>
-                <input type="file" id="fileDevolucao" accept=".csv, .xlsx, .xls">
+                <label>4. Etiqueta Impressa (Opcional - Col. A)</label>
+                <input type="file" id="fileEtiqueta" accept=".csv, .xlsx, .xls">
             </div>
             <button class="btn-main" onclick="tratarClickCarregar()">
-                <i class="fa-solid fa-play"></i> Carregar Tudo
+                <i class="fa-solid fa-play"></i> Processar
             </button>
         </div>
 
         <div id="msgErro"></div>
 
-        <div class="nav-tabs" id="navTabs" style="display:none;">
-            <button class="nav-btn active" onclick="mudarAba('ops')"><i class="fa-solid fa-list-check"></i> Painel Operacional</button>
-            <button class="nav-btn" onclick="mudarAba('evo')"><i class="fa-solid fa-chart-line"></i> Painel Evolução</button>
-        </div>
-
-        <div id="tabOps" class="tab-content active">
-            
+        <div id="tabOps">
             <div class="filters-bar" style="flex-direction:column; align-items:flex-start;">
                 <div style="display:flex; width:100%; gap:15px; margin-bottom:15px; flex-wrap:wrap;">
-                    <div class="filter-item" style="flex: 1;"><label>Busca</label><input type="text" id="buscaGeral" placeholder="Pedido/Motorista..." onkeyup="aplicarFiltros()"></div>
-                    <div class="filter-item"><label>Dias Retidos</label>
+                    <div class="filter-item" style="flex: 1;"><label>Busca Rápida</label><input type="text" id="buscaGeral" placeholder="Pedido ou Motorista..." onkeyup="aplicarFiltros()"></div>
+                    <div class="filter-item"><label>Dias Retidos (Mestre)</label>
                         <div class="days-input-group">
                             <select id="operadorDias" onchange="aplicarFiltros()"><option value="maior">></option><option value="menor"><</option><option value="igual">=</option></select>
-                            <input type="number" id="valorDias" placeholder="Ex: 10" onkeyup="aplicarFiltros()">
+                            <input type="number" id="valorDias" placeholder="Ex: 8" onkeyup="aplicarFiltros()">
                         </div>
                     </div>
-                    <div class="filter-item" style="flex: 1;"><label>Cidade</label><select id="filtroCidade" onchange="aplicarFiltros()"><option value="">Todas</option></select></div>
-                    <div class="filter-item" style="flex: 1.5;"><label>Problemática</label><select id="filtroProblema" onchange="aplicarFiltros()"><option value="">Todas</option></select></div>
-                    <div class="filter-item" style="flex: 1.5;"><label>Status</label><select id="filtroStatus" onchange="aplicarFiltros()"><option value="">Todos</option></select></div>
+                    <div class="filter-item" style="flex: 1;"><label>Cidade Destino</label><select id="filtroCidade" onchange="aplicarFiltros()"><option value="">Todas</option></select></div>
+                    <div class="filter-item" style="flex: 1.5;"><label>Status / Regra</label><select id="filtroStatus" onchange="aplicarFiltros()"><option value="">Todos</option></select></div>
                 </div>
                 <div class="filter-item" style="width:100%;">
-                    <label style="margin-bottom:8px; display:block;">Exibir Grupos:</label>
+                    <label style="margin-bottom:8px; display:block;">Filtrar Grupos Rápidos:</label>
                     <div class="checkbox-group">
-                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="DELIVERED"> 🟢 Já Entregues</label>
-                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="RETURNED_BASE"> 🟢 Já Devolvidos</label>
-                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="AUSENCIA_PROCESS"> 🔵 Proc. Ausência</label>
-                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="AUSENCIA_PLUS"> 🟡 Ausente +1</label>
-                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="APTO"> 🟢 Aptos</label>
-                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="WAIT"> 🔴 Aguardando</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="DELIVERED"> 🟢 Entregues</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="IMPRESSA"> 🖨️ Etiquetas Impressas</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="APTO"> 🟢 Aptos Devolução</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="WAIT"> 🔴 Aguardando (8D)</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="AUSENCIA"> 🔵 Proc. Ausência</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="FAZER_ATIVO"> 🩷 Fazer Ativo</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="VERIFY_DRIVER"> ⚫ Verif. Motorista</label>
-                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="CHECK_JT"> 🟣 Verif. J&T</label>
-                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="CHECK_VERIFY"> 🟠 Verificar Outros</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="INVALID"> 🟠 Tratativa Inválida</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="FINALIZADO"> ⬛ Descarte</label>
                     </div>
                 </div>
             </div>
 
             <div class="kpi-row">
-                <div class="kpi-card border-gray"><h3>Listados</h3><div class="value" id="kpiTotal">0</div></div>
-                <div class="kpi-card border-del"><h3>Já Entregues</h3><div class="value" id="kpiEntregues">0</div></div>
-                <div class="kpi-card border-teal"><h3>Já Devolvidos</h3><div class="value" id="kpiDevolvidos">0</div></div>
-                <div class="kpi-card border-info"><h3>Proc. Ausência</h3><div class="value" id="kpiAusenciaProc">0</div></div>
-                <div class="kpi-card border-gold"><h3>Ausente +1</h3><div class="value" id="kpiAusenciaPlus">0</div></div>
-                <div class="kpi-card border-green"><h3>Aptos Devolução</h3><div class="value" id="kpiApto">0</div></div>
-                <div class="kpi-card border-red"><h3>Aguardando Prazo</h3><div class="value" id="kpiWait">0</div></div>
+                <div class="kpi-card border-gray"><h3>Total</h3><div class="value" id="kpiTotal">0</div></div>
+                <div class="kpi-card border-purple"><h3>Etiq. Impressas</h3><div class="value" id="kpiImpressa">0</div></div>
+                <div class="kpi-card border-green"><h3>Aptos (P/ Imprimir)</h3><div class="value" id="kpiApto">0</div></div>
+                <div class="kpi-card border-ativo"><h3>Fazer Ativo</h3><div class="value" id="kpiAtivo">0</div></div>
+                <div class="kpi-card border-red"><h3>Aguardando (8D)</h3><div class="value" id="kpiWait">0</div></div>
+                <div class="kpi-card border-info"><h3>Ausências Pend.</h3><div class="value" id="kpiAusencia">0</div></div>
                 <div class="kpi-card border-dark"><h3>Verif. Motorista</h3><div class="value" id="kpiDriver">0</div></div>
-                <div class="kpi-card border-purple"><h3>J&T / Outros</h3><div class="value" id="kpiOutros">0</div></div>
             </div>
 
             <div class="main-grid">
                 <div class="sidebar">
-                    <div class="ranking-card"><div class="ranking-header">Top 10 Cidades</div><div id="listaTopCidades"></div></div>
-                    <div class="ranking-card"><div class="ranking-header">Top 10 Problemas</div><div id="listaTopProblemas"></div></div>
+                    <div class="ranking-card"><div class="ranking-header">Top Cidades Problemáticas</div><div id="listaTopCidades"></div></div>
+                    <div class="ranking-card"><div class="ranking-header">Top Motoristas (Pendentes)</div><div id="listaTopMotoristas"></div></div>
                 </div>
+                
                 <div class="table-container">
                     <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                        <h3>Listagem de Pedidos</h3>
+                        <h3>Listagem de Pacotes</h3>
                         <div>
-                            <button class="btn-action btn-cobranca" onclick="abrirModalCobranca('motorista')"><i class="fa-solid fa-user"></i> Cobrar Motorista</button>
-                            <button class="btn-action btn-city" onclick="abrirModalCobranca('cidade')"><i class="fa-solid fa-city"></i> Cobrar Cidade (Grupo)</button>
-                            <button class="btn-action" onclick="copiarCodigos()"><i class="fa-regular fa-copy"></i> Copiar</button>
-                            <button class="btn-action btn-excel" onclick="exportarExcel('ops')"><i class="fa-solid fa-file-excel"></i> Exportar</button>
+                            <button class="btn-action" onclick="copiarCodigos()"><i class="fa-regular fa-copy"></i> Copiar Códigos</button>
+                            <button class="btn-action btn-excel" onclick="exportarExcel()"><i class="fa-solid fa-file-excel"></i> Exportar Dados</button>
                         </div>
                     </div>
                     <table id="tabelaDados">
                         <thead>
                             <tr>
-                                <th onclick="ordenar('codigo')">Pedido</th>
-                                <th onclick="ordenar('diasRetidos')">Dias</th>
-                                <th onclick="ordenar('statusTxt')">Status</th>
-                                <th onclick="ordenar('destinatario')">Destinatário</th>
-                                <th onclick="ordenar('problema')">Problemática</th>
+                                <th onclick="ordenar('codigo')">Pedido / Remessa</th>
+                                <th onclick="ordenar('diasRetidos')" title="Dias retidos desde a previsão">Dias</th>
+                                <th onclick="ordenar('statusTxt')">Status & Regra</th>
+                                <th onclick="ordenar('infoDevolucao')">Info / Liberação</th>
+                                <th onclick="ordenar('problema')">Motivo Problemático</th>
                                 <th onclick="ordenar('motorista')">Motorista</th>
                                 <th onclick="ordenar('cidade')">Cidade</th>
                             </tr>
@@ -300,67 +235,13 @@
             </div>
         </div>
 
-        <div id="tabEvo" class="tab-content">
-            <div class="kpi-row" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="kpi-card border-gray"><h3>Base Retidos (Planilha 1)</h3><div class="value" id="evoBaseTotal">0</div></div>
-                <div class="kpi-card border-green"><h3>Recuperados</h3><div class="value" id="evoRecuperados">0</div></div>
-                <div class="kpi-card border-red"><h3>Pendentes</h3><div class="value" id="evoPendentes">0</div></div>
-                <div class="kpi-card border-info"><h3>Eficiência</h3><div class="value" id="evoEficiencia">0%</div></div>
-            </div>
-            <div class="evo-grid">
-                <div class="ranking-card" style="border-top: 4px solid var(--success);">
-                    <div class="ranking-header"><i class="fa-solid fa-truck-fast"></i> TOP 5 RECUPERADORES</div>
-                    <div id="evoTopMotoristas" style="padding: 10px 0;"></div>
-                </div>
-                <div class="ranking-card" style="border-top: 4px solid var(--secondary);">
-                    <div class="ranking-header"><i class="fa-solid fa-map-location-dot"></i> TOP 5 CIDADES RECUPERADAS</div>
-                    <div id="evoTopCidades" style="padding: 10px 0;"></div>
-                </div>
-            </div>
-            <div class="table-container">
-                <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h3>Relatório Evolução</h3>
-                    <button class="btn-action btn-excel" onclick="exportarExcel('evo')"><i class="fa-solid fa-file-excel"></i> Exportar</button>
-                </div>
-                <table id="tabelaEvo">
-                    <thead>
-                        <tr>
-                            <th onclick="ordenarEvo('codigo')">Pedido</th>
-                            <th onclick="ordenarEvo('statusEvo')">Situação</th>
-                            <th onclick="ordenarEvo('diasRetidos')">Dias Ret.</th>
-                            <th onclick="ordenarEvo('motorista')">Motorista</th>
-                            <th onclick="ordenarEvo('cidade')">Cidade</th>
-                            <th onclick="ordenarEvo('problema')">Problemática</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbodyEvo"></tbody>
-                </table>
-            </div>
-        </div>
     </div>
 
     <script>
-        const IDX_RETIDOS = { pedido: 0, motivo: 17, dias: 19 };
-        const IDX_BASE = { pedido: 0, saida: 14, motorista: 15, problema_time: 17, cidade: 29 };
-        const IDX_COMPLEMENTO = { pedido: 0, motorista: 4, cidade: 19, motivo: 20, destinatario: 21, tsJ: 9, tsQ: 16 };
-        const IDX_DEVOLUCAO = { pedido: 0, data: 4 }; // Confirme se a data está na coluna E (indice 4) da planilha DEVOLVIDO.xlsx
-        const IDX_EVO = { pedido: 0, motorista: 4, cidade: 19 }; 
-
-        const REGRA_DIAS = 9;
-        const STRINGS_JT = ["aguardando.janela", "退回件待客户审核"];
-        const TARGET_DRIVERS = ["FRQDO-JHONATAN ALVES SILVA", "FRQDO-FELIPE LOMBRE MUNDIM"];
-
         let dadosRaw = [];
         let dadosFiltrados = [];
-        let dadosEvolucaoDetalhados = []; 
-        let setRetidosOriginais = new Set(); 
-
-        function mudarAba(aba) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById('tab' + (aba === 'ops' ? 'Ops' : 'Evo')).classList.add('active');
-            event.target.classList.add('active');
-        }
+        let sortCol = '';
+        let sortDir = 'asc';
 
         function lerArquivo(arquivo) {
             return new Promise((resolve, reject) => {
@@ -377,18 +258,78 @@
             });
         }
 
+        // MOTOR DE COLUNAS
+        function detectarColunas(matriz, dicionario) {
+            let headers = matriz[0] || [];
+            let map = {};
+            for (let chave in dicionario) {
+                map[chave] = -1; 
+                let sinominos = dicionario[chave];
+                for (let s of sinominos) {
+                    for (let i = 0; i < headers.length; i++) {
+                        let cabecalho = String(headers[i]).toLowerCase().trim();
+                        if (cabecalho.includes(s)) {
+                            map[chave] = i;
+                            break;
+                        }
+                    }
+                    if (map[chave] !== -1) break;
+                }
+            }
+            return map;
+        }
+
+        function limparCodigo(c) { return String(c || "").trim().toUpperCase(); }
+
+        function tratarDataRobustamente(val) {
+            if (!val) return null;
+            if (val instanceof Date) return isNaN(val) ? null : val;
+            if (typeof val === 'number') {
+                const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+                return isNaN(d) ? null : d;
+            }
+            let s = String(val).trim();
+            let parts = s.split(/[\sT]+/);
+            let datePart = parts[0];
+            let dParts = datePart.split(/[\/\-]/);
+            
+            if(dParts.length === 3) {
+                let ano, mes, dia;
+                if(dParts[0].length === 4) { 
+                    ano = parseInt(dParts[0]); mes = parseInt(dParts[1], 10); dia = parseInt(dParts[2], 10);
+                } else { 
+                    dia = parseInt(dParts[0], 10); mes = parseInt(dParts[1], 10); ano = parseInt(dParts[2]);
+                }
+                let d = new Date(ano, mes-1, dia);
+                return isNaN(d) ? null : d;
+            }
+            return null;
+        }
+
+        function getDataString(d) {
+            if (!d || isNaN(d.getTime())) return null;
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        function formatarDataBR(data) {
+            if(!data) return "";
+            const dd = String(data.getDate()).padStart(2, '0');
+            const mm = String(data.getMonth() + 1).padStart(2, '0');
+            const yyyy = data.getFullYear();
+            return `${dd}/${mm}/${yyyy}`;
+        }
+
         function tratarClickCarregar() {
             const fRetidos = document.getElementById('fileRetidos').files[0];
             const fBase = document.getElementById('fileBase').files[0];
-            const fEvo = document.getElementById('fileEvolucao').files[0]; // Input 3 (Entregues + Evolução)
-            const fComp = document.getElementById('fileComplemento').files[0];
-            const fDev = document.getElementById('fileDevolucao').files[0];
-            
+            const fProb = document.getElementById('fileProb').files[0];
+            const fEtiqueta = document.getElementById('fileEtiqueta').files[0];
+
             const divErro = document.getElementById('msgErro');
             divErro.style.display = 'none'; divErro.innerHTML = '';
 
-            if(!fRetidos || !fBase) {
-                mostrarErro("As planilhas 1 (Retidos) e 2 (Base) são obrigatórias.");
+            if(!fRetidos) {
+                divErro.style.display = 'block'; divErro.innerHTML = "O Input 1 (Mestre Retidos) é obrigatório.";
                 return;
             }
 
@@ -397,219 +338,230 @@
             setTimeout(async () => {
                 try {
                     const retidos = await lerArquivo(fRetidos);
-                    const base = await lerArquivo(fBase);
+                    const base = fBase ? await lerArquivo(fBase) : null;
+                    const prob = fProb ? await lerArquivo(fProb) : null;
+                    const etiqueta = fEtiqueta ? await lerArquivo(fEtiqueta) : null;
                     
-                    let entregues = null;
-                    if(fEvo) entregues = await lerArquivo(fEvo); // Ler input 3
-
-                    let complemento = null;
-                    if(fComp) complemento = await lerArquivo(fComp);
-
-                    let devolvidos = null;
-                    if(fDev) devolvidos = await lerArquivo(fDev);
-
-                    processarLogica(retidos, base, complemento, devolvidos, entregues);
-
-                    if(entregues) {
-                        processarEvolucao(entregues);
-                    } else {
-                        dadosEvolucaoDetalhados = [];
-                        renderEvolucao({ motoristas: [], cidades: [], kpis: { total: setRetidosOriginais.size, rec: 0, pen: setRetidosOriginais.size } });
-                    }
-
-                    document.getElementById('navTabs').style.display = 'flex';
-
+                    processarLogica(retidos, base, prob, etiqueta);
                 } catch (error) {
-                    console.error(error);
-                    mostrarErro("Erro: " + error.message);
+                    divErro.style.display = 'block'; divErro.innerHTML = "Erro: " + error.message;
                 } finally {
                     document.getElementById('loadingOverlay').classList.add('hidden');
                 }
-            }, 200);
+            }, 300);
         }
 
-        function mostrarErro(msg) {
-            const div = document.getElementById('msgErro');
-            div.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${msg}`;
-            div.style.display = 'block';
-        }
+        function processarLogica(retidos, base, prob, etiqueta) {
+            dadosRaw = [];
+            
+            // Detectar posições
+            let colRet = detectarColunas(retidos, {
+                pedido: ["remessa", "pedido", "número de pedido"],
+                previsao: ["prevista", "data prevista"],
+                motorista: ["digitalizador de saída", "digitalizador", "motorista"],
+                problema: ["tipo problemático", "problema"]
+            });
+            if(colRet.pedido===-1) colRet.pedido=0; if(colRet.previsao===-1) colRet.previsao=10;
+            if(colRet.motorista===-1) colRet.motorista=13; if(colRet.problema===-1) colRet.problema=17;
 
-        function limparCodigo(val) {
-            if (!val) return "";
-            return String(val).trim().toUpperCase().replace(/[\s\-\.]/g, "");
-        }
+            let colBase = base ? detectarColunas(base, {
+                remessa: ["número de pedido", "pedido", "remessa"],
+                motorista: ["responsável", "motorista", "entregador"],
+                assinatura: ["marca de assinatura", "assinatura"],
+                cidade: ["cidade destino", "município de destino", "cidade"]
+            }) : null;
+            if(colBase && colBase.remessa===-1) colBase.remessa=0;
+            if(colBase && colBase.motorista===-1) colBase.motorista=4;
+            if(colBase && colBase.assinatura===-1) colBase.assinatura=10; 
+            if(colBase && colBase.cidade===-1) colBase.cidade=19;
 
-        function processarLogica(retidos, base, complemento, devolvidos, entregues) {
-            setRetidosOriginais.clear(); 
+            let colProb = prob ? detectarColunas(prob, {
+                codigo: ["número de pedido", "pedido", "remessa"],
+                dataBipe: ["data de registro", "tempo de digitalização", "tempo"],
+                motivo: ["nível ii", "nível 2", "tipo problemático", "motivo", "descrição"]
+            }) : null;
+            if(colProb && colProb.codigo===-1) colProb.codigo=0;
+            if(colProb && colProb.dataBipe===-1) colProb.dataBipe=11; 
+            if(colProb && colProb.motivo===-1) colProb.motivo=4; 
 
-            // 1. Mapear Entregues (Input 3)
-            const setEntregues = new Set();
-            if(entregues) {
-                for(let i=1; i < entregues.length; i++) {
-                    const row = entregues[i];
-                    if(row && row.length > 0) {
-                        const code = limparCodigo(row[IDX_EVO.pedido]);
-                        if(code) setEntregues.add(code);
-                    }
-                }
-            }
-
-            // 2. Mapear Base (Backup de Datas)
+            // 1. Mapear Base
             const mapBase = new Map();
-            for(let i=1; i < base.length; i++) {
-                const linha = base[i];
-                if (!linha || linha.length === 0) continue;
-                const rawPed = linha[IDX_BASE.pedido];
-                if (!rawPed) continue;
-                mapBase.set(limparCodigo(rawPed), {
-                    dataSaida: parseData(linha[IDX_BASE.saida]),
-                    dataProblema: parseData(linha[IDX_BASE.problema_time]),
-                    cidade: linha[IDX_BASE.cidade],
-                    motorista: linha[IDX_BASE.motorista]
-                });
-            }
-
-            // 3. Mapear Complemento (Texto)
-            const mapComp = new Map();
-            if(complemento) {
-                for(let i=1; i < complemento.length; i++) {
-                    const linha = complemento[i];
-                    if (!linha || linha.length === 0) continue;
-                    const rawPed = linha[IDX_COMPLEMENTO.pedido];
-                    if (!rawPed) continue;
-                    mapComp.set(limparCodigo(rawPed), {
-                        motorista: linha[IDX_COMPLEMENTO.motorista],
-                        cidade: linha[IDX_COMPLEMENTO.cidade],
-                        motivo: linha[IDX_COMPLEMENTO.motivo],
-                        destinatario: linha[IDX_COMPLEMENTO.destinatario],
-                        // REMOVIDO USO DE COLUNA J E Q PARA DEFINIR "DEVOLVIDO"
-                        // tsJ: parseData(linha[IDX_COMPLEMENTO.tsJ]),
-                        // tsQ: parseData(linha[IDX_COMPLEMENTO.tsQ])
+            if(base) {
+                for(let i = 1; i < base.length; i++) {
+                    if(!base[i] || !base[i][colBase.remessa]) continue;
+                    mapBase.set(limparCodigo(base[i][colBase.remessa]), {
+                        motorista: base[i][colBase.motorista],
+                        assinatura: base[i][colBase.assinatura],
+                        cidade: base[i][colBase.cidade]
                     });
                 }
             }
 
-            // 4. Mapear Devolvidos (Input 5 - OBRIGATÓRIO)
-            const mapDev = new Map();
-            if(devolvidos) {
-                for(let i=1; i < devolvidos.length; i++) {
-                    const linha = devolvidos[i];
-                    if (!linha || linha.length === 0) continue;
-                    const rawPed = linha[IDX_DEVOLUCAO.pedido];
-                    if (!rawPed) continue;
-                    const dataDev = parseData(linha[IDX_DEVOLUCAO.data]);
-                    if(dataDev) mapDev.set(limparCodigo(rawPed), dataDev);
+            // 2. Mapear Problemáticos 
+            const mapProb = new Map();
+            if(prob) {
+                for(let i = 1; i < prob.length; i++) {
+                    if(!prob[i] || !prob[i][colProb.codigo]) continue;
+                    const cod = limparCodigo(prob[i][colProb.codigo]);
+                    
+                    const dataObj = tratarDataRobustamente(prob[i][colProb.dataBipe]);
+                    const dataStr = getDataString(dataObj);
+                    const motivo = String(prob[i][colProb.motivo] || "").trim();
+
+                    if(!mapProb.has(cod)) {
+                        mapProb.set(cod, { motivos: [], ausencias: new Set() });
+                    }
+                    const pData = mapProb.get(cod);
+                    
+                    if(motivo && dataObj) {
+                        pData.motivos.push({ data: dataObj, dataStr: dataStr, motivo: motivo });
+                    }
+
+                    const motLow = motivo.toLowerCase();
+                    if(motLow.includes("ausência") || motLow.includes("ausencia") || motLow.includes("客户不在")) {
+                        if(dataStr) {
+                            pData.ausencias.add(dataStr);
+                        } else {
+                            pData.ausencias.add("desconhecido-" + i);
+                        }
+                    }
+                }
+
+                mapProb.forEach(v => {
+                    v.motivos.sort((a,b) => b.data - a.data); 
+                    v.ultimoMotivo = v.motivos.length > 0 ? v.motivos[0].motivo : "";
+                });
+            }
+
+            // 3. Mapear Etiquetas Impressas
+            const setEtiquetas = new Set();
+            if(etiqueta) {
+                let colEtiq = detectarColunas(etiqueta, { codigo: ["número", "pedido", "remessa", "pacote", "código"] });
+                let idxCodEtiq = colEtiq.codigo !== -1 ? colEtiq.codigo : 0; // Assume A(0) se não achar
+                
+                for(let i = 1; i < etiqueta.length; i++) {
+                    if(!etiqueta[i] || !etiqueta[i][idxCodEtiq]) continue;
+                    setEtiquetas.add(limparCodigo(etiqueta[i][idxCodEtiq]));
                 }
             }
 
-            dadosRaw = [];
+            const hoje = new Date();
+            hoje.setHours(0,0,0,0);
 
-            // 5. Cruzar
-            for(let i=1; i < retidos.length; i++) {
+            // 4. Processar Mestre Retidos
+            for(let i = 1; i < retidos.length; i++) {
                 const linha = retidos[i];
-                if (!linha || linha.length === 0) continue;
-                const codigo = limparCodigo(linha[IDX_RETIDOS.pedido]);
-                if (codigo === "REMESSA" || codigo === "PEDIDO") continue;
+                if (!linha || !linha[colRet.pedido]) continue;
 
-                setRetidosOriginais.add(codigo);
+                const codigo = limparCodigo(linha[colRet.pedido]);
+                if (codigo === "REMESSA" || codigo.includes("PEDIDO") || codigo.includes("NÚMERO")) continue;
 
-                let rawDias = linha[IDX_RETIDOS.dias];
-                let diasRetidos = 0;
-                if (typeof rawDias === 'number') diasRetidos = rawDias;
-                else {
-                    const strDias = String(rawDias || "");
-                    const match = strDias.match(/(\d+)/); 
-                    if (match) diasRetidos = parseInt(match[1]);
-                }
-
-                let problema = String(linha[IDX_RETIDOS.motivo] || "").trim();
-                
-                const matchBase = mapBase.get(codigo);
-                const matchComp = mapComp.get(codigo);
-
+                let motorista = linha[colRet.motorista] || "";
+                let problema = linha[colRet.problema] || "";
                 let cidade = "N/D";
-                let motorista = "N/D";
-                let destinatario = "Não Identificado";
-                
-                if(matchComp) {
-                    if (matchComp.motorista) motorista = String(matchComp.motorista).trim();
-                    if (matchComp.cidade) cidade = matchComp.cidade;
-                    if (matchComp.destinatario) destinatario = matchComp.destinatario;
-                    if ((!problema || problema === "Sem motivo") && matchComp.motivo) problema = matchComp.motivo;
-                } else if(matchBase) {
-                    if (matchBase.cidade) cidade = matchBase.cidade;
+                let entregue = false;
+
+                const matchBase = mapBase.get(codigo);
+                if (matchBase) {
                     if (matchBase.motorista) motorista = String(matchBase.motorista).trim();
+                    if (matchBase.cidade) cidade = String(matchBase.cidade).trim();
+                    if (matchBase.assinatura && String(matchBase.assinatura).toLowerCase().includes("recebimento com assinatura normal")) {
+                        entregue = true;
+                    }
                 }
 
-                // --- LÓGICA DE STATUS ---
-                let statusIPO = "CHECK_VERIFY";
-                let statusTxt = "VERIFICAR";
-                let statusClass = "status-verify";
-                
-                // 1. CHECAGEM DE ENTREGUE
-                if (setEntregues.has(codigo)) {
-                    statusIPO = "DELIVERED";
-                    statusTxt = "JÁ ENTREGUE (BAIXA)";
-                    statusClass = "status-delivered";
-                } else {
-                    // 2. CHECAGEM DE DEVOLUÇÃO (CORRIGIDA)
+                const matchProb = mapProb.get(codigo);
+                if (matchProb && matchProb.ultimoMotivo) {
+                    problema = matchProb.ultimoMotivo;
+                }
+
+                let previsaoData = tratarDataRobustamente(linha[colRet.previsao]);
+                let diasRetidos = 0;
+                if(previsaoData) {
+                    diasRetidos = Math.floor((hoje - previsaoData) / 86400000);
+                    if (diasRetidos < 0) diasRetidos = 0; 
+                }
+
+                let statusIPO = ""; let statusTxt = ""; let statusClass = "";
+                let infoDevolucao = "-";
+
+                const pLow = String(problema).toLowerCase();
+                const semProb = (!problema || problema === "Sem motivo" || problema === "undefined" || problema === "null");
+                const semMot = (!motorista || motorista === "N/D" || motorista === "null");
+
+                if (entregue) {
+                    statusIPO = "DELIVERED"; statusTxt = "ENTREGUE / CONCLUÍDO"; statusClass = "status-delivered";
+                } else if (semProb && semMot) {
+                    statusIPO = "FAZER_ATIVO"; statusTxt = "FAZER ATIVO"; statusClass = "status-fazer-ativo";
+                } else if (semProb) {
+                    statusIPO = "VERIFY_DRIVER"; statusTxt = "VERIFICAR C/ MOTORISTA"; statusClass = "status-driver";
+                } else if (pLow.includes("descarte") || pLow.includes("全部弃置件")) {
+                    statusIPO = "FINALIZADO"; statusTxt = "DESCARTE / FINALIZADO"; statusClass = "status-descarte";
+                } else if (pLow.includes("recusa") || pLow.includes("无理由拒收") || pLow.includes("triagem") || pLow.includes("错分")) {
+                    statusIPO = "APTO"; statusTxt = "APTO DEVOLUÇÃO IMEDIATA"; statusClass = "status-apto";
+                } else if (pLow.includes("insucesso na devolução") || pLow.includes("p仓不成功") || pLow.includes("退回客户")) {
+                    statusIPO = "INVALID"; statusTxt = "TRATATIVA INVÁLIDA"; statusClass = "status-verify";
+                } else if (pLow.includes("endereço") || pLow.includes("endereco") || pLow.includes("地址信息错误") || pLow.includes("impossibilidade") || pLow.includes("无法进入")) {
                     
-                    // Só é devolvido se ESTIVER no Input 5 (mapDev)
-                    const dataRetornoBase = mapDev.get(codigo); // Data do Input 5
-
-                    let devolvidoConfirmado = false;
-
-                    if (dataRetornoBase) { // Apenas se existir no relatório de devolução
-                        const dtSaida = matchBase ? matchBase.dataSaida : null; 
-                        const dtProblema = matchBase ? matchBase.dataProblema : null;
-                        
-                        // Última ação na rua
-                        let ultimaAcaoRua = null;
-                        if (dtSaida && dtProblema) ultimaAcaoRua = dtSaida > dtProblema ? dtSaida : dtProblema;
-                        else ultimaAcaoRua = dtSaida || dtProblema;
-
-                        if (!ultimaAcaoRua) {
-                            devolvidoConfirmado = true; // Tem bip de devolução e nenhuma saída registrada recente
-                        } else {
-                            // Se bip de devolução for MAIOR que a saída, confirma.
-                            if (dataRetornoBase > ultimaAcaoRua) {
-                                devolvidoConfirmado = true;
-                            }
+                    let dataDoProblema = null;
+                    if (matchProb) {
+                        let bipesEnd = matchProb.motivos.filter(m => {
+                            let mLow = m.motivo.toLowerCase();
+                            return mLow.includes("endereço") || mLow.includes("endereco") || mLow.includes("地址信息错误") || mLow.includes("impossibilidade") || mLow.includes("无法进入");
+                        });
+                        if (bipesEnd.length > 0) {
+                            bipesEnd.sort((a,b) => a.data - b.data); 
+                            dataDoProblema = bipesEnd[0].data;
                         }
                     }
 
-                    if (devolvidoConfirmado) {
-                        statusIPO = "RETURNED_BASE"; statusTxt = "JÁ DEVOLVIDO"; statusClass = "status-returned";
-                    } else {
-                        // Lógica Padrão de Status
-                        const pLow = problema.toLowerCase();
-                        const mUp = motorista.toUpperCase();
+                    if (!dataDoProblema && previsaoData) dataDoProblema = previsaoData; 
 
-                        if (!problema || problema === "Sem motivo") {
-                            statusIPO = "VERIFY_DRIVER"; statusTxt = "VERIFICAR COM MOTORISTA"; statusClass = "status-driver";
-                        } else if (pLow.includes("recusa")) {
-                            statusIPO = "APTO"; statusTxt = "APTO DEVOLUÇÃO"; statusClass = "status-apto";
-                        } else if (pLow.includes("ausência") || pLow.includes("ausencia")) {
-                            if (TARGET_DRIVERS.some(d => mUp.includes(d))) {
-                                statusIPO = "AUSENCIA_PROCESS"; statusTxt = "EM PROCESSO DE LANÇAMENTO"; statusClass = "status-ausencia-proc";
-                            } else {
-                                statusIPO = "AUSENCIA_PLUS"; statusTxt = "AUSENTE +1 TENTATIVA"; statusClass = "status-ausencia-plus";
-                            }
-                        } else if (pLow.includes("endereço") || pLow.includes("impossibilidade")) {
-                            statusIPO = "WAIT"; statusTxt = "AGUARDANDO PRAZO"; statusClass = "status-wait";
+                    if (dataDoProblema) {
+                        let dataLib = new Date(dataDoProblema);
+                        dataLib.setDate(dataLib.getDate() + 8); 
+                        infoDevolucao = `Liberar: ${formatarDataBR(dataLib)}`;
+                        
+                        if (hoje >= dataLib) {
+                            statusIPO = "APTO"; statusTxt = "APTO DEVOLUÇÃO (8 DIAS)"; statusClass = "status-apto";
                         } else {
-                            if (STRINGS_JT.some(k => pLow.includes(k))) {
-                                statusIPO = "CHECK_JT"; statusTxt = "VERIFICAR COM J&T"; statusClass = "status-jt";
-                            } else if (diasRetidos > REGRA_DIAS) { 
-                                statusIPO = "APTO"; statusTxt = "APTO DEVOLUÇÃO"; statusClass = "status-apto";
-                            } else {
-                                statusIPO = "CHECK_VERIFY"; statusTxt = "VERIFICAR"; statusClass = "status-verify";
-                            }
+                            statusIPO = "WAIT"; statusTxt = "AGUARDANDO PRAZO"; statusClass = "status-wait";
                         }
+                    } else {
+                        infoDevolucao = "Sem data de Ref.";
+                        statusIPO = "WAIT"; statusTxt = "AGUARDANDO PRAZO"; statusClass = "status-wait";
+                    }
+
+                } else if (pLow.includes("ausência") || pLow.includes("ausencia") || pLow.includes("客户不在")) {
+                    
+                    let qtd = matchProb ? matchProb.ausencias.size : 1; 
+                    if(qtd === 0) qtd = 1; 
+                    
+                    infoDevolucao = `${qtd} Tentativa(s)`;
+                    
+                    if (qtd >= 3) {
+                        statusIPO = "APTO"; statusTxt = "APTO DEVOLUÇÃO (3 TENTATIVAS)"; statusClass = "status-apto";
+                    } else {
+                        statusIPO = "AUSENCIA"; statusTxt = "AUSENTE / TENTATIVAS"; statusClass = "status-ausencia-proc";
+                    }
+                } else {
+                    statusIPO = "CHECK_VERIFY"; statusTxt = "VERIFICAR PACOTE"; statusClass = "status-verify";
+                }
+
+                // VALIDAÇÃO DA ETIQUETA IMPRESSA SOBREPONDO STATUS
+                if (statusIPO !== "DELIVERED" && statusIPO !== "FINALIZADO") {
+                    if (setEtiquetas.has(codigo)) {
+                        statusIPO = "IMPRESSA"; 
+                        statusTxt = "ETIQUETA IMPRESSA"; 
+                        statusClass = "status-impressa";
                     }
                 }
 
-                dadosRaw.push({ codigo, diasRetidos, problema, cidade, motorista, destinatario, statusIPO, statusTxt, statusClass });
+                dadosRaw.push({ 
+                    codigo, diasRetidos, problema, cidade, 
+                    motorista: motorista || "N/D", 
+                    statusIPO, statusTxt, statusClass, infoDevolucao 
+                });
             }
 
             dadosRaw.sort((a, b) => b.diasRetidos - a.diasRetidos);
@@ -617,237 +569,153 @@
             aplicarFiltros();
         }
 
-        // --- LÓGICA EVOLUÇÃO ---
-        function processarEvolucao(data) {
-            const countMot = {}; const countCid = {}; let recuperadosCount = 0;
-            const setRecuperados = new Set();
-            for(let i=1; i < data.length; i++) {
-                const linha = data[i]; if(!linha || linha.length === 0) continue;
-                const codigo = limparCodigo(linha[IDX_EVO.pedido]);
-                if (setRetidosOriginais.has(codigo)) {
-                    recuperadosCount++;
-                    setRecuperados.add(codigo);
-                    const mot = String(linha[IDX_EVO.motorista] || "N/D").trim().toUpperCase();
-                    const cid = String(linha[IDX_EVO.cidade] || "N/D").trim().toUpperCase();
-                    if(mot !== "N/D") countMot[mot] = (countMot[mot] || 0) + 1;
-                    if(cid !== "N/D") countCid[cid] = (countCid[cid] || 0) + 1;
-                }
-            }
-            dadosEvolucaoDetalhados = dadosRaw.map(r => {
-                const entregue = setRecuperados.has(r.codigo);
-                return { codigo: r.codigo, motorista: r.motorista, cidade: r.cidade, problema: r.problema, diasRetidos: r.diasRetidos, statusEvo: entregue ? "ENTREGUE" : "PENDENTE", classeEvo: entregue ? "evo-ok" : "evo-pend" };
-            });
-            dadosEvolucaoDetalhados.sort((a,b) => (a.statusEvo === b.statusEvo) ? b.diasRetidos - a.diasRetidos : (a.statusEvo === "PENDENTE" ? -1 : 1));
-            const topMot = Object.entries(countMot).sort((a,b) => b[1] - a[1]).slice(0, 5);
-            const topCid = Object.entries(countCid).sort((a,b) => b[1] - a[1]).slice(0, 5);
-            renderEvolucao({ motoristas: topMot, cidades: topCid, kpis: { total: setRetidosOriginais.size, rec: recuperadosCount, pen: setRetidosOriginais.size - recuperadosCount } });
-            renderTabelaEvo();
-        }
-
-        // --- MENSAGENS E MODAL ---
-        function abrirModalCobranca(modo) {
-            document.getElementById('modoCobranca').value = modo;
-            const sel = document.getElementById('selCobrancaTarget');
-            const lbl = document.getElementById('lblCobrancaAlvo');
-            const txt = document.getElementById('txtAreaCobranca');
-            sel.innerHTML = '<option value="">-- Selecione --</option>';
-            txt.value = "";
-
-            if (modo === 'motorista') {
-                lbl.innerText = "Selecione o Motorista:";
-                const motoristas = [...new Set(dadosRaw.map(d => d.motorista))].filter(m => m && m !== "N/D").sort();
-                motoristas.forEach(m => sel.innerHTML += `<option value="${m}">${m}</option>`);
-            } else {
-                lbl.innerText = "Selecione a Cidade:";
-                const cidades = [...new Set(dadosRaw.map(d => d.cidade))].filter(c => c && c !== "N/D").sort();
-                cidades.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`);
-            }
-            sel.onchange = function() { if(modo === 'motorista') gerarTextoCobrancaMotorista(); else gerarTextoCobrancaCidade(); };
-            document.getElementById('modalCobranca').style.display = 'flex';
-        }
-
-        function fecharModalCobranca() { document.getElementById('modalCobranca').style.display = 'none'; }
-
-        function gerarTextoCobrancaMotorista() {
-            const motorista = document.getElementById('selCobrancaTarget').value;
-            if(!motorista) return;
-            const pendencias = dadosRaw.filter(d => 
-                d.motorista === motorista && 
-                d.statusIPO !== 'APTO' && 
-                d.statusIPO !== 'RETURNED_BASE' &&
-                d.statusIPO !== 'DELIVERED' // Ignora já entregues
-            );
-            if(pendencias.length === 0) { document.getElementById('txtAreaCobranca').value = "Nenhuma pendência."; return; }
-            let texto = `*OLÁ ${motorista}!*\n\nConstam *${pendencias.length}* pacotes pendentes:\n\n`;
-            pendencias.forEach(p => texto += `📦 *${p.codigo}* (${p.diasRetidos} dias)\n👤 ${p.destinatario}\n⚠️ ${p.problema}\n📍 ${p.cidade}\n\n`);
-            texto += "Favor regularizar.";
-            document.getElementById('txtAreaCobranca').value = texto;
-        }
-
-        function gerarTextoCobrancaCidade() {
-            const cidade = document.getElementById('selCobrancaTarget').value;
-            if(!cidade) return;
-            
-            // FILTRO NOVO: Apenas >= 3 dias E não Entregue/Devolvido
-            const pendencias = dadosRaw.filter(d => 
-                d.cidade === cidade && 
-                d.statusIPO !== 'APTO' && 
-                d.statusIPO !== 'RETURNED_BASE' &&
-                d.statusIPO !== 'DELIVERED' && 
-                d.diasRetidos >= 3
-            );
-
-            if(pendencias.length === 0) {
-                document.getElementById('txtAreaCobranca').value = "Nenhuma pendência acima de 3 dias nesta cidade.";
-                return;
-            }
-
-            const porMotorista = {};
-            pendencias.forEach(p => {
-                const mot = p.motorista || "SEM MOTORISTA";
-                if(!porMotorista[mot]) porMotorista[mot] = [];
-                porMotorista[mot].push(p);
-            });
-
-            let texto = `🚨 *COBRANÇA DE PENDÊNCIAS - ${cidade.toUpperCase()}* 🚨\n\n`;
-            texto += `⚠️ *ATENÇÃO:* Pedidos acima de *5 dias* retidos são extraviados automaticamente pela J&T!\n`;
-            texto += `Peço *urgência* na verificação destes casos.\n\n`;
-            texto += `--------------------------------\n\n`;
-
-            Object.keys(porMotorista).sort().forEach(mot => {
-                const lista = porMotorista[mot];
-                texto += `👤 *${mot}*\n`;
-                lista.forEach(p => {
-                    texto += `📦 ${p.codigo} (*${p.diasRetidos} dias*) - ${p.destinatario.substring(0, 25)}\n`;
-                });
-                texto += `\n`;
-            });
-
-            texto += `--------------------------------\n`;
-            texto += `❓ *Qualquer dúvida, consultar a base.*`;
-
-            document.getElementById('txtAreaCobranca').value = texto;
-        }
-
-        function copiarTextoCobranca() { document.getElementById('txtAreaCobranca').select(); document.execCommand('copy'); alert("Copiado!"); }
-
-        // --- UTILS ---
-        function renderEvolucao(d) {
-            document.getElementById('evoBaseTotal').innerText = d.kpis.total;
-            document.getElementById('evoRecuperados').innerText = d.kpis.rec;
-            document.getElementById('evoPendentes').innerText = d.kpis.pen;
-            document.getElementById('evoEficiencia').innerText = (d.kpis.total > 0 ? ((d.kpis.rec / d.kpis.total)*100).toFixed(1) : 0) + "%";
-            const elMot = document.getElementById('evoTopMotoristas'); elMot.innerHTML = "";
-            const elCid = document.getElementById('evoTopCidades'); elCid.innerHTML = "";
-            if(d.motoristas.length > 0) { const max = d.motoristas[0][1]; d.motoristas.forEach(([n,q], i) => elMot.innerHTML += `<div class="rank-row"><div class="rank-name">#${i+1} ${n}</div><div class="rank-bar-container"><div class="rank-bar bar-green" style="width:${(q/max)*100}%"></div></div><div class="rank-count">${q}</div></div>`); }
-            if(d.cidades.length > 0) { const max = d.cidades[0][1]; d.cidades.forEach(([n,q], i) => elCid.innerHTML += `<div class="rank-row"><div class="rank-name">#${i+1} ${n}</div><div class="rank-bar-container"><div class="rank-bar bar-blue" style="width:${(q/max)*100}%"></div></div><div class="rank-count">${q}</div></div>`); }
-        }
-        function renderTabelaEvo() {
-            const tb = document.getElementById('tbodyEvo'); tb.innerHTML = "";
-            dadosEvolucaoDetalhados.slice(0,500).forEach(r => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${r.codigo}</td><td class="${r.classeEvo}">${r.statusEvo}</td><td>${r.diasRetidos}</td><td>${r.motorista}</td><td>${r.cidade}</td><td style="font-size:11px">${r.problema}</td>`;
-                tb.appendChild(tr);
-            });
-        }
-        function parseData(val) {
-            if (!val) return null;
-            if (val instanceof Date) return val;
-            if (typeof val === 'number') return new Date(Math.round((val - 25569) * 86400 * 1000));
-            if (typeof val === 'string') {
-                if (val.match(/^\d{4}-\d{2}-\d{2}/)) return new Date(val);
-                if (val.includes('/')) { const p = val.split(' ')[0].split('/'); if(p.length===3) return new Date(p[2], p[1]-1, p[0]); }
-                if (val.includes(':')) return new Date(val);
-            }
-            return new Date(val);
-        }
         function popularFiltrosAuxiliares() {
-            const c = new Set(), p = new Set(), s = new Set();
-            dadosRaw.forEach(d => { if(d.cidade!=="N/D") c.add(d.cidade); if(d.problema) p.add(d.problema); if(d.statusTxt) s.add(d.statusTxt); });
-            const selC = document.getElementById('filtroCidade'), selP = document.getElementById('filtroProblema'), selS = document.getElementById('filtroStatus');
-            selC.innerHTML = '<option value="">Todas</option>'; Array.from(c).sort().forEach(x => selC.innerHTML+=`<option value="${x}">${x}</option>`);
-            selP.innerHTML = '<option value="">Todas</option>'; Array.from(p).sort().forEach(x => selP.innerHTML+=`<option value="${x}">${x.substring(0,60)}</option>`);
-            selS.innerHTML = '<option value="">Todos</option>'; Array.from(s).sort().forEach(x => selS.innerHTML+=`<option value="${x}">${x}</option>`);
+            const cidades = [...new Set(dadosRaw.map(d => d.cidade))].filter(Boolean).sort();
+            const statusSet = [...new Set(dadosRaw.map(d => d.statusTxt))].filter(Boolean).sort();
+            
+            const selCid = document.getElementById('filtroCidade');
+            const selStat = document.getElementById('filtroStatus');
+            
+            selCid.innerHTML = '<option value="">Todas</option>';
+            selStat.innerHTML = '<option value="">Todos</option>';
+            
+            cidades.forEach(c => selCid.innerHTML += `<option value="${c}">${c}</option>`);
+            statusSet.forEach(s => selStat.innerHTML += `<option value="${s}">${s}</option>`);
         }
+
         function aplicarFiltros() {
             const busca = document.getElementById('buscaGeral').value.toLowerCase();
-            const fC = document.getElementById('filtroCidade').value, fP = document.getElementById('filtroProblema').value, fS = document.getElementById('filtroStatus').value;
-            const opD = document.getElementById('operadorDias').value, vD = document.getElementById('valorDias').value;
-            const chk = Array.from(document.querySelectorAll('.checkbox-item input:checked')).map(x => x.value);
+            const cid = document.getElementById('filtroCidade').value;
+            const stat = document.getElementById('filtroStatus').value;
+            
+            const vDias = document.getElementById('valorDias').value;
+            const opDias = document.getElementById('operadorDias').value;
+            
+            const chkAtivos = Array.from(document.querySelectorAll('.checkbox-group input:checked')).map(cb => cb.value);
+
             dadosFiltrados = dadosRaw.filter(d => {
-                const txt = d.codigo.toLowerCase().includes(busca) || d.motorista.toLowerCase().includes(busca);
-                const st = chk.includes(d.statusIPO);
-                const city = fC ? d.cidade === fC : true;
-                const prob = fP ? d.problema === fP : true;
-                const stat = fS ? d.statusTxt === fS : true;
-                let dias = true;
-                if(vD !== "") { const v = parseInt(vD); dias = opD==="maior" ? d.diasRetidos > v : (opD==="menor" ? d.diasRetidos < v : d.diasRetidos === v); }
-                return txt && st && city && prob && stat && dias;
+                if (!chkAtivos.includes(d.statusIPO) && !chkAtivos.includes("CHECK_VERIFY")) {
+                    if(!(d.statusIPO === "CHECK_VERIFY" && document.querySelector('input[value="INVALID"]').checked)) return false; 
+                }
+
+                const matchBusca = d.codigo.toLowerCase().includes(busca) || String(d.motorista).toLowerCase().includes(busca);
+                const matchCid = cid === "" || d.cidade === cid;
+                const matchStat = stat === "" || d.statusTxt === stat;
+
+                let matchDias = true;
+                if (vDias !== "") {
+                    const val = parseInt(vDias);
+                    if (opDias === 'maior') matchDias = d.diasRetidos > val;
+                    else if (opDias === 'menor') matchDias = d.diasRetidos < val;
+                    else if (opDias === 'igual') matchDias = d.diasRetidos === val;
+                }
+
+                return matchBusca && matchCid && matchStat && matchDias;
             });
-            atualizarKPIs(); renderTabela(); renderTopLists();
+
+            atualizarKPIs();
+            renderTabela();
+            renderTopLists();
         }
+
         function atualizarKPIs() {
             const setK = (id, fn) => document.getElementById(id).innerText = dadosFiltrados.filter(fn).length;
             document.getElementById('kpiTotal').innerText = dadosFiltrados.length;
-            setK('kpiEntregues', d => d.statusIPO === 'DELIVERED');
-            setK('kpiDevolvidos', d => d.statusIPO === 'RETURNED_BASE');
-            setK('kpiAusenciaProc', d => d.statusIPO === 'AUSENCIA_PROCESS');
-            setK('kpiAusenciaPlus', d => d.statusIPO === 'AUSENCIA_PLUS');
+            
+            setK('kpiImpressa', d => d.statusIPO === 'IMPRESSA');
+            setK('kpiAtivo', d => d.statusIPO === 'FAZER_ATIVO');
             setK('kpiApto', d => d.statusIPO === 'APTO');
             setK('kpiWait', d => d.statusIPO === 'WAIT');
+            setK('kpiAusencia', d => d.statusIPO === 'AUSENCIA');
             setK('kpiDriver', d => d.statusIPO === 'VERIFY_DRIVER');
-            setK('kpiOutros', d => ['CHECK_JT', 'CHECK_VERIFY'].includes(d.statusIPO));
         }
+
         function renderTabela() {
-            const tb = document.getElementById('tbody'); tb.innerHTML = "";
-            dadosFiltrados.slice(0,500).forEach(r => {
+            const tb = document.getElementById('tbody');
+            tb.innerHTML = "";
+            dadosFiltrados.slice(0, 500).forEach(r => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td><b>${r.codigo}</b></td><td style="font-weight:bold;">${r.diasRetidos}</td><td><span class="badge ${r.statusClass}">${r.statusTxt}</span></td><td style="font-size:11px">${r.destinatario.substring(0,20)}</td><td style="font-size:12px">${r.problema}</td><td style="font-size:11px">${r.motorista}</td><td>${r.cidade}</td>`;
+                let infoHTML = r.infoDevolucao !== "-" ? `<span class="info-pill">${r.infoDevolucao}</span>` : "-";
+                
+                tr.innerHTML = `
+                    <td><strong>${r.codigo}</strong></td>
+                    <td style="text-align:center;">${r.diasRetidos}</td>
+                    <td><span class="badge ${r.statusClass}">${r.statusTxt}</span></td>
+                    <td>${infoHTML}</td>
+                    <td style="font-size: 11px;">${r.problema}</td>
+                    <td>${r.motorista}</td>
+                    <td>${r.cidade}</td>
+                `;
                 tb.appendChild(tr);
             });
         }
+
         function renderTopLists() {
-            const render = (id, k, cl) => {
-                const c = {}; dadosFiltrados.forEach(d => c[d[k]||"N/D"] = (c[d[k]||"N/D"]||0)+1);
-                const s = Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,10);
-                const el = document.getElementById(id); el.innerHTML = "";
-                if(s.length===0) el.innerHTML="<div style='text-align:center;color:#999'>Sem dados</div>";
-                else { const max = s[0][1]; s.forEach(([n,q]) => el.innerHTML+=`<div class="rank-row"><div class="rank-name" title="${n}">${n}</div><div class="rank-bar-container"><div class="rank-bar ${cl}" style="width:${(q/max)*100}%"></div></div><div class="rank-count">${q}</div></div>`); }
-            };
-            render('listaTopCidades', 'cidade', 'bar-blue');
-            render('listaTopProblemas', 'problema', 'bar-red');
+            const countCidades = {};
+            const countMot = {};
+            
+            dadosFiltrados.forEach(d => {
+                if(d.statusIPO !== 'DELIVERED') { 
+                    countCidades[d.cidade] = (countCidades[d.cidade] || 0) + 1;
+                    if(d.motorista && d.motorista !== "N/D") {
+                        countMot[d.motorista] = (countMot[d.motorista] || 0) + 1;
+                    }
+                }
+            });
+
+            const topCidades = Object.entries(countCidades).sort((a,b)=>b[1]-a[1]).slice(0,10);
+            const topMotoristas = Object.entries(countMot).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+            const divCid = document.getElementById('listaTopCidades');
+            divCid.innerHTML = "";
+            if(topCidades.length > 0) {
+                const max = topCidades[0][1];
+                topCidades.forEach(([nome, qtd], i) => divCid.innerHTML += `<div class="rank-row"><div class="rank-name">#${i+1} ${nome}</div><div class="rank-bar-container"><div class="rank-bar bar-blue" style="width:${(qtd/max)*100}%"></div></div><div class="rank-count">${qtd}</div></div>`);
+            }
+
+            const divMot = document.getElementById('listaTopMotoristas');
+            divMot.innerHTML = "";
+            if(topMotoristas.length > 0) {
+                const max = topMotoristas[0][1];
+                topMotoristas.forEach(([nome, qtd], i) => divMot.innerHTML += `<div class="rank-row"><div class="rank-name">#${i+1} ${nome}</div><div class="rank-bar-container"><div class="rank-bar bar-red" style="width:${(qtd/max)*100}%"></div></div><div class="rank-count">${qtd}</div></div>`);
+            }
         }
-        let sDir = 'desc';
+
         function ordenar(k) {
-            sDir = sDir==='asc'?'desc':'asc';
-            dadosFiltrados.sort((a,b) => {
-                let vA = a[k], vB = b[k]; if(typeof vA==='string'){vA=vA.toLowerCase();vB=vB.toLowerCase();}
-                return (vA < vB ? -1 : 1) * (sDir==='asc'?1:-1);
+            if (sortCol === k) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+            else { sortCol = k; sortDir = 'asc'; }
+
+            dadosFiltrados.sort((a, b) => {
+                let vA = a[k], vB = b[k]; 
+                if(typeof vA === 'string'){ vA = vA.toLowerCase(); vB = vB.toLowerCase(); }
+                return (vA < vB ? -1 : 1) * (sortDir === 'asc' ? 1 : -1);
             });
             renderTabela();
         }
-        let sDirE = 'desc';
-        function ordenarEvo(k) {
-            sDirE = sDirE==='asc'?'desc':'asc';
-            dadosEvolucaoDetalhados.sort((a,b) => {
-                let vA = a[k], vB = b[k]; if(typeof vA==='string'){vA=vA.toLowerCase();vB=vB.toLowerCase();}
-                return (vA < vB ? -1 : 1) * (sDirE==='asc'?1:-1);
-            });
-            renderTabelaEvo();
-        }
+
         function copiarCodigos() {
-            if(dadosFiltrados.length===0) { alert("Vazio!"); return; }
-            const t = document.createElement("textarea"); t.value = dadosFiltrados.map(d=>d.codigo).join("\n");
+            if(dadosFiltrados.length === 0) return;
+            const t = document.createElement("textarea"); 
+            t.value = dadosFiltrados.map(d => d.codigo).join("\n");
             document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
             alert("Códigos copiados!");
         }
-        function exportarExcel(type) {
-            const dt = type==='ops' 
-                ? dadosFiltrados.map(d => ({ "Pedido": d.codigo, "Dias": d.diasRetidos, "Status": d.statusTxt, "Motivo": d.problema, "Motorista": d.motorista, "Cidade": d.cidade, "Destinatario": d.destinatario }))
-                : dadosEvolucaoDetalhados.map(d => ({ "Pedido": d.codigo, "Situação": d.statusEvo, "Dias Retidos": d.diasRetidos, "Motorista (Ret)": d.motorista, "Cidade": d.cidade, "Problema": d.problema }));
+
+        function exportarExcel() {
+            if(dadosFiltrados.length === 0) return;
+            const dt = dadosFiltrados.map(d => ({ 
+                "Pedido / Remessa": d.codigo, 
+                "Dias Retidos": d.diasRetidos, 
+                "Status/Regra": d.statusTxt, 
+                "Info Liberação/Tentativas": d.infoDevolucao,
+                "Motivo Problemático": d.problema, 
+                "Motorista": d.motorista, 
+                "Cidade": d.cidade 
+            }));
             const ws = XLSX.utils.json_to_sheet(dt);
-            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Dados");
-            XLSX.writeFile(wb, type==='ops'?"Relatorio_Operacional.xlsx":"Relatorio_Evolucao.xlsx");
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Painel_Operacional");
+            XLSX.writeFile(wb, "Dashboard_Logistica_V6.xlsx");
         }
     </script>
 </body>
