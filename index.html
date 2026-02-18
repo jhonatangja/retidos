@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard J&T - Pacotes Retidos (V7 - Hora Exata)</title>
+    <title>Dashboard J&T - Pacotes Retidos (V8 - Vencendo Amanhã)</title>
     
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -63,6 +63,7 @@
         .border-ativo { border-left-color: var(--ativo); }
         .border-green { border-left-color: var(--success); }
         .border-red { border-left-color: var(--primary); }
+        .border-warning { border-left-color: var(--warning); }
         .border-info { border-left-color: var(--info); }
         .border-dark { border-left-color: var(--dark); }
         .border-del { border-left-color: var(--delivered); }
@@ -128,13 +129,13 @@
     <div id="loadingOverlay" class="hidden">
         <div class="spinner"></div>
         <h3>Analisando Dados...</h3>
-        <p style="color:#666; font-size:12px;">Calculando horários exatos de liberação (SLA J&T)</p>
+        <p style="color:#666; font-size:12px;">Calculando horários exatos e previsão de vencimento</p>
     </div>
 
     <header>
         <div class="container" style="padding: 0;">
-            <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - Retidos (V7 Hora Exata)</h1>
-            <p>Contagem de 8 dias para devolução apurada na exata hora e minuto do lançamento.</p>
+            <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - Retidos (V8)</h1>
+            <p>Contagem de 8 dias na hora exata e identificação automática de pacotes vencendo nas próximas 24h.</p>
         </div>
     </header>
 
@@ -181,13 +182,14 @@
                     <label style="margin-bottom:8px; display:block;">Filtrar Grupos Rápidos:</label>
                     <div class="checkbox-group">
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="DELIVERED"> 🟢 Entregues</label>
-                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="IMPRESSA"> 🖨️ Etiquetas Impressas</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="IMPRESSA"> 🖨️ Etiq. Impressas</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="APTO"> 🟢 Aptos Devolução</label>
-                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="WAIT"> 🔴 Aguardando (8D)</label>
+                        <label class="checkbox-item" style="background:#fff3cd; color:#856404; border:1px solid #ffeeba;"><input type="checkbox" checked onchange="aplicarFiltros()" value="PROXIMO"> ⏳ Vencendo Amanhã</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="WAIT"> 🔴 Aguardando</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="AUSENCIA"> 🔵 Proc. Ausência</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="FAZER_ATIVO"> 🩷 Fazer Ativo</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="VERIFY_DRIVER"> ⚫ Verif. Motorista</label>
-                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="INVALID"> 🟠 Tratativa Inválida</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="INVALID"> 🟠 Inválida</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="FINALIZADO"> ⬛ Descarte</label>
                     </div>
                 </div>
@@ -196,7 +198,8 @@
             <div class="kpi-row">
                 <div class="kpi-card border-gray"><h3>Total</h3><div class="value" id="kpiTotal">0</div></div>
                 <div class="kpi-card border-purple"><h3>Etiq. Impressas</h3><div class="value" id="kpiImpressa">0</div></div>
-                <div class="kpi-card border-green"><h3>Aptos (P/ Imprimir)</h3><div class="value" id="kpiApto">0</div></div>
+                <div class="kpi-card border-green"><h3>Aptos (Liberados)</h3><div class="value" id="kpiApto">0</div></div>
+                <div class="kpi-card border-warning"><h3>Vencendo (D-1)</h3><div class="value" id="kpiProximo">0</div></div>
                 <div class="kpi-card border-ativo"><h3>Fazer Ativo</h3><div class="value" id="kpiAtivo">0</div></div>
                 <div class="kpi-card border-red"><h3>Aguardando (8D)</h3><div class="value" id="kpiWait">0</div></div>
                 <div class="kpi-card border-info"><h3>Ausências Pend.</h3><div class="value" id="kpiAusencia">0</div></div>
@@ -280,7 +283,6 @@
 
         function limparCodigo(c) { return String(c || "").trim().toUpperCase(); }
 
-        // NOVO: TRATAMENTO DE DATA PRESERVANDO AS HORAS, MINUTOS E SEGUNDOS EXATOS
         function tratarDataRobustamente(val) {
             if (!val) return null;
             if (val instanceof Date) return isNaN(val) ? null : val;
@@ -291,7 +293,7 @@
             let s = String(val).trim();
             let parts = s.split(/[\sT]+/);
             let datePart = parts[0];
-            let timePart = parts[1] || "00:00:00"; // Se não tiver hora, assume meia-noite
+            let timePart = parts[1] || "00:00:00"; 
             
             let dParts = datePart.split(/[\/\-]/);
             let tParts = timePart.split(':');
@@ -411,7 +413,7 @@
                     const cod = limparCodigo(prob[i][colProb.codigo]);
                     
                     const dataObj = tratarDataRobustamente(prob[i][colProb.dataBipe]);
-                    const dataStr = getDataString(dataObj); // dataStr não pega hora, o que é ótimo para contar dias unicos de ausência
+                    const dataStr = getDataString(dataObj); 
                     const motivo = String(prob[i][colProb.motivo] || "").trim();
 
                     if(!mapProb.has(cod)) {
@@ -450,9 +452,8 @@
                 }
             }
 
-            // 'agora' pega o exato milissegundo em que o botão foi clicado (Para calcular a regra exata de 8 dias)
             const agora = new Date(); 
-            // 'hojeZered' é para calcular os "dias retidos totais" baseado na previsão (que não tem hora importando)
+            const amanha = new Date(agora.getTime() + 24 * 60 * 60 * 1000); // 24 horas para frente
             const hojeZered = new Date(); hojeZered.setHours(0,0,0,0);
 
             for(let i = 1; i < retidos.length; i++) {
@@ -466,6 +467,7 @@
                 let problema = linha[colRet.problema] || "";
                 let cidade = "N/D";
                 let entregue = false;
+                let isProximo = false; // NOVA VARIÁVEL
 
                 const matchBase = mapBase.get(codigo);
                 if (matchBase) {
@@ -525,17 +527,19 @@
                     if (!dataDoProblema && previsaoData) dataDoProblema = previsaoData; 
 
                     if (dataDoProblema) {
-                        // Calcula exatas 192 horas adicionadas (8 dias completos na hora)
                         let dataLib = new Date(dataDoProblema.getTime());
                         dataLib.setDate(dataLib.getDate() + 8); 
                         
                         infoDevolucao = `Liberar: ${formatarDataBR(dataLib)}`;
                         
-                        // COMPARAÇÃO EXATA DE HORÁRIO
                         if (agora >= dataLib) {
                             statusIPO = "APTO"; statusTxt = "APTO DEVOLUÇÃO (8 DIAS)"; statusClass = "status-apto";
                         } else {
                             statusIPO = "WAIT"; statusTxt = "AGUARDANDO PRAZO"; statusClass = "status-wait";
+                            // IDENTIFICA SE VENCE NAS PRÓXIMAS 24H
+                            if (dataLib <= amanha) {
+                                isProximo = true;
+                            }
                         }
                     } else {
                         infoDevolucao = "Sem data de Ref.";
@@ -553,6 +557,10 @@
                         statusIPO = "APTO"; statusTxt = "APTO DEVOLUÇÃO (3 TENTATIVAS)"; statusClass = "status-apto";
                     } else {
                         statusIPO = "AUSENCIA"; statusTxt = "AUSENTE / TENTATIVAS"; statusClass = "status-ausencia-proc";
+                        // IDENTIFICA SE TEM 2 TENTATIVAS (UM PASSO DE SER DEVOLVIDO)
+                        if (qtd === 2) {
+                            isProximo = true;
+                        }
                     }
                 } else {
                     statusIPO = "CHECK_VERIFY"; statusTxt = "VERIFICAR PACOTE"; statusClass = "status-verify";
@@ -569,7 +577,7 @@
                 dadosRaw.push({ 
                     codigo, diasRetidos, problema, cidade, 
                     motorista: motorista || "N/D", 
-                    statusIPO, statusTxt, statusClass, infoDevolucao 
+                    statusIPO, statusTxt, statusClass, infoDevolucao, isProximo 
                 });
             }
 
@@ -603,9 +611,14 @@
             const chkAtivos = Array.from(document.querySelectorAll('.checkbox-group input:checked')).map(cb => cb.value);
 
             dadosFiltrados = dadosRaw.filter(d => {
-                if (!chkAtivos.includes(d.statusIPO) && !chkAtivos.includes("CHECK_VERIFY")) {
-                    if(!(d.statusIPO === "CHECK_VERIFY" && document.querySelector('input[value="INVALID"]').checked)) return false; 
-                }
+                
+                // NOVA LÓGICA DE FILTRO (Permite ver Vencendo Amanhã)
+                let okCheckbox = false;
+                if (chkAtivos.includes(d.statusIPO)) okCheckbox = true;
+                if (d.statusIPO === "CHECK_VERIFY" && chkAtivos.includes("INVALID")) okCheckbox = true;
+                if (d.isProximo && chkAtivos.includes("PROXIMO")) okCheckbox = true;
+
+                if (!okCheckbox) return false;
 
                 const matchBusca = d.codigo.toLowerCase().includes(busca) || String(d.motorista).toLowerCase().includes(busca);
                 const matchCid = cid === "" || d.cidade === cid;
@@ -632,8 +645,9 @@
             document.getElementById('kpiTotal').innerText = dadosFiltrados.length;
             
             setK('kpiImpressa', d => d.statusIPO === 'IMPRESSA');
-            setK('kpiAtivo', d => d.statusIPO === 'FAZER_ATIVO');
             setK('kpiApto', d => d.statusIPO === 'APTO');
+            setK('kpiProximo', d => d.isProximo); // NOVO KPI
+            setK('kpiAtivo', d => d.statusIPO === 'FAZER_ATIVO');
             setK('kpiWait', d => d.statusIPO === 'WAIT');
             setK('kpiAusencia', d => d.statusIPO === 'AUSENCIA');
             setK('kpiDriver', d => d.statusIPO === 'VERIFY_DRIVER');
@@ -724,7 +738,7 @@
             const ws = XLSX.utils.json_to_sheet(dt);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Painel_Operacional");
-            XLSX.writeFile(wb, "Dashboard_Logistica_V7.xlsx");
+            XLSX.writeFile(wb, "Dashboard_Logistica_V8.xlsx");
         }
     </script>
 </body>
