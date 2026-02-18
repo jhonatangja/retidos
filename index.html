@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard J&T - Pacotes Retidos (V6)</title>
+    <title>Dashboard J&T - Pacotes Retidos (V7 - Hora Exata)</title>
     
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -110,7 +110,7 @@
         .status-delivered { background-color: var(--delivered); }
         .status-fazer-ativo { background-color: var(--ativo); }
         .status-descarte { background-color: #000; color: #fff; }
-        .status-impressa { background-color: var(--purple); color: #fff; } /* NOVO STATUS */
+        .status-impressa { background-color: var(--purple); color: #fff; } 
         
         .info-pill { background: #e9ecef; color: #495057; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; white-space: nowrap; border: 1px solid #ced4da; }
 
@@ -128,13 +128,13 @@
     <div id="loadingOverlay" class="hidden">
         <div class="spinner"></div>
         <h3>Analisando Dados...</h3>
-        <p style="color:#666; font-size:12px;">Cruzando os relatórios e validando as etiquetas impressas</p>
+        <p style="color:#666; font-size:12px;">Calculando horários exatos de liberação (SLA J&T)</p>
     </div>
 
     <header>
         <div class="container" style="padding: 0;">
-            <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - Retidos & Problemáticos (V6)</h1>
-            <p>Com reconhecimento de Etiquetas Impressas para evitar retrabalho na devolução.</p>
+            <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - Retidos (V7 Hora Exata)</h1>
+            <p>Contagem de 8 dias para devolução apurada na exata hora e minuto do lançamento.</p>
         </div>
     </header>
 
@@ -258,7 +258,6 @@
             });
         }
 
-        // MOTOR DE COLUNAS
         function detectarColunas(matriz, dicionario) {
             let headers = matriz[0] || [];
             let map = {};
@@ -281,6 +280,7 @@
 
         function limparCodigo(c) { return String(c || "").trim().toUpperCase(); }
 
+        // NOVO: TRATAMENTO DE DATA PRESERVANDO AS HORAS, MINUTOS E SEGUNDOS EXATOS
         function tratarDataRobustamente(val) {
             if (!val) return null;
             if (val instanceof Date) return isNaN(val) ? null : val;
@@ -291,7 +291,10 @@
             let s = String(val).trim();
             let parts = s.split(/[\sT]+/);
             let datePart = parts[0];
+            let timePart = parts[1] || "00:00:00"; // Se não tiver hora, assume meia-noite
+            
             let dParts = datePart.split(/[\/\-]/);
+            let tParts = timePart.split(':');
             
             if(dParts.length === 3) {
                 let ano, mes, dia;
@@ -300,7 +303,12 @@
                 } else { 
                     dia = parseInt(dParts[0], 10); mes = parseInt(dParts[1], 10); ano = parseInt(dParts[2]);
                 }
-                let d = new Date(ano, mes-1, dia);
+                
+                let h = parseInt(tParts[0] || 0, 10);
+                let m = parseInt(tParts[1] || 0, 10);
+                let sec = parseInt(tParts[2] || 0, 10);
+
+                let d = new Date(ano, mes-1, dia, h, m, sec);
                 return isNaN(d) ? null : d;
             }
             return null;
@@ -315,8 +323,9 @@
             if(!data) return "";
             const dd = String(data.getDate()).padStart(2, '0');
             const mm = String(data.getMonth() + 1).padStart(2, '0');
-            const yyyy = data.getFullYear();
-            return `${dd}/${mm}/${yyyy}`;
+            const hh = String(data.getHours()).padStart(2, '0');
+            const min = String(data.getMinutes()).padStart(2, '0');
+            return `${dd}/${mm} às ${hh}:${min}`;
         }
 
         function tratarClickCarregar() {
@@ -354,7 +363,6 @@
         function processarLogica(retidos, base, prob, etiqueta) {
             dadosRaw = [];
             
-            // Detectar posições
             let colRet = detectarColunas(retidos, {
                 pedido: ["remessa", "pedido", "número de pedido"],
                 previsao: ["prevista", "data prevista"],
@@ -384,7 +392,6 @@
             if(colProb && colProb.dataBipe===-1) colProb.dataBipe=11; 
             if(colProb && colProb.motivo===-1) colProb.motivo=4; 
 
-            // 1. Mapear Base
             const mapBase = new Map();
             if(base) {
                 for(let i = 1; i < base.length; i++) {
@@ -397,7 +404,6 @@
                 }
             }
 
-            // 2. Mapear Problemáticos 
             const mapProb = new Map();
             if(prob) {
                 for(let i = 1; i < prob.length; i++) {
@@ -405,7 +411,7 @@
                     const cod = limparCodigo(prob[i][colProb.codigo]);
                     
                     const dataObj = tratarDataRobustamente(prob[i][colProb.dataBipe]);
-                    const dataStr = getDataString(dataObj);
+                    const dataStr = getDataString(dataObj); // dataStr não pega hora, o que é ótimo para contar dias unicos de ausência
                     const motivo = String(prob[i][colProb.motivo] || "").trim();
 
                     if(!mapProb.has(cod)) {
@@ -433,11 +439,10 @@
                 });
             }
 
-            // 3. Mapear Etiquetas Impressas
             const setEtiquetas = new Set();
             if(etiqueta) {
                 let colEtiq = detectarColunas(etiqueta, { codigo: ["número", "pedido", "remessa", "pacote", "código"] });
-                let idxCodEtiq = colEtiq.codigo !== -1 ? colEtiq.codigo : 0; // Assume A(0) se não achar
+                let idxCodEtiq = colEtiq.codigo !== -1 ? colEtiq.codigo : 0; 
                 
                 for(let i = 1; i < etiqueta.length; i++) {
                     if(!etiqueta[i] || !etiqueta[i][idxCodEtiq]) continue;
@@ -445,10 +450,11 @@
                 }
             }
 
-            const hoje = new Date();
-            hoje.setHours(0,0,0,0);
+            // 'agora' pega o exato milissegundo em que o botão foi clicado (Para calcular a regra exata de 8 dias)
+            const agora = new Date(); 
+            // 'hojeZered' é para calcular os "dias retidos totais" baseado na previsão (que não tem hora importando)
+            const hojeZered = new Date(); hojeZered.setHours(0,0,0,0);
 
-            // 4. Processar Mestre Retidos
             for(let i = 1; i < retidos.length; i++) {
                 const linha = retidos[i];
                 if (!linha || !linha[colRet.pedido]) continue;
@@ -478,7 +484,8 @@
                 let previsaoData = tratarDataRobustamente(linha[colRet.previsao]);
                 let diasRetidos = 0;
                 if(previsaoData) {
-                    diasRetidos = Math.floor((hoje - previsaoData) / 86400000);
+                    let prevZerada = new Date(previsaoData); prevZerada.setHours(0,0,0,0);
+                    diasRetidos = Math.floor((hojeZered - prevZerada) / 86400000);
                     if (diasRetidos < 0) diasRetidos = 0; 
                 }
 
@@ -518,11 +525,14 @@
                     if (!dataDoProblema && previsaoData) dataDoProblema = previsaoData; 
 
                     if (dataDoProblema) {
-                        let dataLib = new Date(dataDoProblema);
+                        // Calcula exatas 192 horas adicionadas (8 dias completos na hora)
+                        let dataLib = new Date(dataDoProblema.getTime());
                         dataLib.setDate(dataLib.getDate() + 8); 
+                        
                         infoDevolucao = `Liberar: ${formatarDataBR(dataLib)}`;
                         
-                        if (hoje >= dataLib) {
+                        // COMPARAÇÃO EXATA DE HORÁRIO
+                        if (agora >= dataLib) {
                             statusIPO = "APTO"; statusTxt = "APTO DEVOLUÇÃO (8 DIAS)"; statusClass = "status-apto";
                         } else {
                             statusIPO = "WAIT"; statusTxt = "AGUARDANDO PRAZO"; statusClass = "status-wait";
@@ -548,7 +558,6 @@
                     statusIPO = "CHECK_VERIFY"; statusTxt = "VERIFICAR PACOTE"; statusClass = "status-verify";
                 }
 
-                // VALIDAÇÃO DA ETIQUETA IMPRESSA SOBREPONDO STATUS
                 if (statusIPO !== "DELIVERED" && statusIPO !== "FINALIZADO") {
                     if (setEtiquetas.has(codigo)) {
                         statusIPO = "IMPRESSA"; 
@@ -715,7 +724,7 @@
             const ws = XLSX.utils.json_to_sheet(dt);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Painel_Operacional");
-            XLSX.writeFile(wb, "Dashboard_Logistica_V6.xlsx");
+            XLSX.writeFile(wb, "Dashboard_Logistica_V7.xlsx");
         }
     </script>
 </body>
