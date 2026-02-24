@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard J&T - Pacotes Retidos (V8 - Vencendo Amanhã)</title>
+    <title>Dashboard J&T - Pacotes Retidos (V10 - Retorno à Base)</title>
     
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -39,7 +39,7 @@
         .card-upload {
             background: white; padding: 20px; border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px;
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; align-items: flex-end;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: flex-end;
             border-top: 4px solid var(--secondary);
         }
         .input-group label { display: block; font-weight: 700; margin-bottom: 8px; color: #555; font-size: 11px; text-transform: uppercase; }
@@ -129,13 +129,13 @@
     <div id="loadingOverlay" class="hidden">
         <div class="spinner"></div>
         <h3>Analisando Dados...</h3>
-        <p style="color:#666; font-size:12px;">Calculando horários exatos e previsão de vencimento</p>
+        <p style="color:#666; font-size:12px;">Processando regras e rastreando a localização na base</p>
     </div>
 
     <header>
         <div class="container" style="padding: 0;">
-            <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - Retidos (V8)</h1>
-            <p>Contagem de 8 dias na hora exata e identificação automática de pacotes vencendo nas próximas 24h.</p>
+            <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - Retidos (V10)</h1>
+            <p>Identificação de localização física (Base x Motoboy) e regras de negócio inteligentes.</p>
         </div>
     </header>
 
@@ -155,8 +155,12 @@
                 <input type="file" id="fileProb" accept=".csv, .xlsx, .xls">
             </div>
             <div class="input-group">
-                <label>4. Etiqueta Impressa (Opcional - Col. A)</label>
+                <label>4. Etiqueta Impressa</label>
                 <input type="file" id="fileEtiqueta" accept=".csv, .xlsx, .xls">
+            </div>
+            <div class="input-group">
+                <label>5. Retorno à Base (Col. A)</label>
+                <input type="file" id="fileRetorno" accept=".csv, .xlsx, .xls">
             </div>
             <button class="btn-main" onclick="tratarClickCarregar()">
                 <i class="fa-solid fa-play"></i> Processar
@@ -169,14 +173,21 @@
             <div class="filters-bar" style="flex-direction:column; align-items:flex-start;">
                 <div style="display:flex; width:100%; gap:15px; margin-bottom:15px; flex-wrap:wrap;">
                     <div class="filter-item" style="flex: 1;"><label>Busca Rápida</label><input type="text" id="buscaGeral" placeholder="Pedido ou Motorista..." onkeyup="aplicarFiltros()"></div>
-                    <div class="filter-item"><label>Dias Retidos (Mestre)</label>
+                    <div class="filter-item"><label>Dias Retidos</label>
                         <div class="days-input-group">
                             <select id="operadorDias" onchange="aplicarFiltros()"><option value="maior">></option><option value="menor"><</option><option value="igual">=</option></select>
                             <input type="number" id="valorDias" placeholder="Ex: 8" onkeyup="aplicarFiltros()">
                         </div>
                     </div>
                     <div class="filter-item" style="flex: 1;"><label>Cidade Destino</label><select id="filtroCidade" onchange="aplicarFiltros()"><option value="">Todas</option></select></div>
-                    <div class="filter-item" style="flex: 1.5;"><label>Status / Regra</label><select id="filtroStatus" onchange="aplicarFiltros()"><option value="">Todos</option></select></div>
+                    <div class="filter-item" style="flex: 1;"><label>Status / Regra</label><select id="filtroStatus" onchange="aplicarFiltros()"><option value="">Todos</option></select></div>
+                    <div class="filter-item" style="flex: 1;"><label>Localização (Físico)</label>
+                        <select id="filtroLocal" onchange="aplicarFiltros()">
+                            <option value="">Todos (Base + Motoboy)</option>
+                            <option value="BASE">🏣 Somente Na Base</option>
+                            <option value="MOTOBOY">⚠️ Com Motoboy</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="filter-item" style="width:100%;">
                     <label style="margin-bottom:8px; display:block;">Filtrar Grupos Rápidos:</label>
@@ -335,6 +346,7 @@
             const fBase = document.getElementById('fileBase').files[0];
             const fProb = document.getElementById('fileProb').files[0];
             const fEtiqueta = document.getElementById('fileEtiqueta').files[0];
+            const fRetorno = document.getElementById('fileRetorno').files[0]; // NOVO INPUT
 
             const divErro = document.getElementById('msgErro');
             divErro.style.display = 'none'; divErro.innerHTML = '';
@@ -352,8 +364,9 @@
                     const base = fBase ? await lerArquivo(fBase) : null;
                     const prob = fProb ? await lerArquivo(fProb) : null;
                     const etiqueta = fEtiqueta ? await lerArquivo(fEtiqueta) : null;
+                    const retorno = fRetorno ? await lerArquivo(fRetorno) : null;
                     
-                    processarLogica(retidos, base, prob, etiqueta);
+                    processarLogica(retidos, base, prob, etiqueta, retorno);
                 } catch (error) {
                     divErro.style.display = 'block'; divErro.innerHTML = "Erro: " + error.message;
                 } finally {
@@ -362,17 +375,19 @@
             }, 300);
         }
 
-        function processarLogica(retidos, base, prob, etiqueta) {
+        function processarLogica(retidos, base, prob, etiqueta, retorno) {
             dadosRaw = [];
             
             let colRet = detectarColunas(retidos, {
                 pedido: ["remessa", "pedido", "número de pedido"],
                 previsao: ["prevista", "data prevista"],
                 motorista: ["digitalizador de saída", "digitalizador", "motorista"],
-                problema: ["tipo problemático", "problema"]
+                problema: ["tipo problemático", "problema"],
+                origem: ["origem do pedido", "origem", "plataforma"] 
             });
             if(colRet.pedido===-1) colRet.pedido=0; if(colRet.previsao===-1) colRet.previsao=10;
             if(colRet.motorista===-1) colRet.motorista=13; if(colRet.problema===-1) colRet.problema=17;
+            if(colRet.origem===-1) colRet.origem=15; 
 
             let colBase = base ? detectarColunas(base, {
                 remessa: ["número de pedido", "pedido", "remessa"],
@@ -445,15 +460,25 @@
             if(etiqueta) {
                 let colEtiq = detectarColunas(etiqueta, { codigo: ["número", "pedido", "remessa", "pacote", "código"] });
                 let idxCodEtiq = colEtiq.codigo !== -1 ? colEtiq.codigo : 0; 
-                
                 for(let i = 1; i < etiqueta.length; i++) {
                     if(!etiqueta[i] || !etiqueta[i][idxCodEtiq]) continue;
                     setEtiquetas.add(limparCodigo(etiqueta[i][idxCodEtiq]));
                 }
             }
 
+            // MAPEANDO OS PACOTES QUE JÁ RETORNARAM PARA A BASE (Input 5)
+            const setRetorno = new Set();
+            if(retorno) {
+                let colRetor = detectarColunas(retorno, { codigo: ["número", "pedido", "remessa", "pacote", "código"] });
+                let idxCodRetor = colRetor.codigo !== -1 ? colRetor.codigo : 0; 
+                for(let i = 1; i < retorno.length; i++) {
+                    if(!retorno[i] || !retorno[i][idxCodRetor]) continue;
+                    setRetorno.add(limparCodigo(retorno[i][idxCodRetor]));
+                }
+            }
+
             const agora = new Date(); 
-            const amanha = new Date(agora.getTime() + 24 * 60 * 60 * 1000); // 24 horas para frente
+            const amanha = new Date(agora.getTime() + 24 * 60 * 60 * 1000); 
             const hojeZered = new Date(); hojeZered.setHours(0,0,0,0);
 
             for(let i = 1; i < retidos.length; i++) {
@@ -465,9 +490,11 @@
 
                 let motorista = linha[colRet.motorista] || "";
                 let problema = linha[colRet.problema] || "";
+                let origemPlatform = linha[colRet.origem] || ""; 
                 let cidade = "N/D";
                 let entregue = false;
-                let isProximo = false; // NOVA VARIÁVEL
+                let isProximo = false; 
+                let isNaBase = setRetorno.has(codigo); // VERIFICA SE ESTÁ NA BASE
 
                 const matchBase = mapBase.get(codigo);
                 if (matchBase) {
@@ -495,6 +522,8 @@
                 let infoDevolucao = "-";
 
                 const pLow = String(problema).toLowerCase();
+                const isTikTok = String(origemPlatform).toLowerCase().replace(/\s/g, '').includes("tiktok");
+                
                 const semProb = (!problema || problema === "Sem motivo" || problema === "undefined" || problema === "null");
                 const semMot = (!motorista || motorista === "N/D" || motorista === "null");
 
@@ -512,38 +541,44 @@
                     statusIPO = "INVALID"; statusTxt = "TRATATIVA INVÁLIDA"; statusClass = "status-verify";
                 } else if (pLow.includes("endereço") || pLow.includes("endereco") || pLow.includes("地址信息错误") || pLow.includes("impossibilidade") || pLow.includes("无法进入")) {
                     
-                    let dataDoProblema = null;
-                    if (matchProb) {
-                        let bipesEnd = matchProb.motivos.filter(m => {
-                            let mLow = m.motivo.toLowerCase();
-                            return mLow.includes("endereço") || mLow.includes("endereco") || mLow.includes("地址信息错误") || mLow.includes("impossibilidade") || mLow.includes("无法进入");
-                        });
-                        if (bipesEnd.length > 0) {
-                            bipesEnd.sort((a,b) => a.data - b.data); 
-                            dataDoProblema = bipesEnd[0].data;
-                        }
-                    }
-
-                    if (!dataDoProblema && previsaoData) dataDoProblema = previsaoData; 
-
-                    if (dataDoProblema) {
-                        let dataLib = new Date(dataDoProblema.getTime());
-                        dataLib.setDate(dataLib.getDate() + 8); 
-                        
-                        infoDevolucao = `Liberar: ${formatarDataBR(dataLib)}`;
-                        
-                        if (agora >= dataLib) {
-                            statusIPO = "APTO"; statusTxt = "APTO DEVOLUÇÃO (8 DIAS)"; statusClass = "status-apto";
-                        } else {
-                            statusIPO = "WAIT"; statusTxt = "AGUARDANDO PRAZO"; statusClass = "status-wait";
-                            // IDENTIFICA SE VENCE NAS PRÓXIMAS 24H
-                            if (dataLib <= amanha) {
-                                isProximo = true;
+                    if (isTikTok) {
+                        statusIPO = "APTO"; 
+                        statusTxt = "APTO DEVOLUÇÃO IMEDIATA"; 
+                        statusClass = "status-apto";
+                        infoDevolucao = "TikTok (S/ Custódia)";
+                    } else {
+                        let dataDoProblema = null;
+                        if (matchProb) {
+                            let bipesEnd = matchProb.motivos.filter(m => {
+                                let mLow = m.motivo.toLowerCase();
+                                return mLow.includes("endereço") || mLow.includes("endereco") || mLow.includes("地址信息错误") || mLow.includes("impossibilidade") || mLow.includes("无法进入");
+                            });
+                            if (bipesEnd.length > 0) {
+                                bipesEnd.sort((a,b) => a.data - b.data); 
+                                dataDoProblema = bipesEnd[0].data;
                             }
                         }
-                    } else {
-                        infoDevolucao = "Sem data de Ref.";
-                        statusIPO = "WAIT"; statusTxt = "AGUARDANDO PRAZO"; statusClass = "status-wait";
+
+                        if (!dataDoProblema && previsaoData) dataDoProblema = previsaoData; 
+
+                        if (dataDoProblema) {
+                            let dataLib = new Date(dataDoProblema.getTime());
+                            dataLib.setDate(dataLib.getDate() + 8); 
+                            
+                            infoDevolucao = `Liberar: ${formatarDataBR(dataLib)}`;
+                            
+                            if (agora >= dataLib) {
+                                statusIPO = "APTO"; statusTxt = "APTO DEVOLUÇÃO (8 DIAS)"; statusClass = "status-apto";
+                            } else {
+                                statusIPO = "WAIT"; statusTxt = "AGUARDANDO PRAZO"; statusClass = "status-wait";
+                                if (dataLib <= amanha) {
+                                    isProximo = true;
+                                }
+                            }
+                        } else {
+                            infoDevolucao = "Sem data de Ref.";
+                            statusIPO = "WAIT"; statusTxt = "AGUARDANDO PRAZO"; statusClass = "status-wait";
+                        }
                     }
 
                 } else if (pLow.includes("ausência") || pLow.includes("ausencia") || pLow.includes("客户不在")) {
@@ -557,7 +592,6 @@
                         statusIPO = "APTO"; statusTxt = "APTO DEVOLUÇÃO (3 TENTATIVAS)"; statusClass = "status-apto";
                     } else {
                         statusIPO = "AUSENCIA"; statusTxt = "AUSENTE / TENTATIVAS"; statusClass = "status-ausencia-proc";
-                        // IDENTIFICA SE TEM 2 TENTATIVAS (UM PASSO DE SER DEVOLVIDO)
                         if (qtd === 2) {
                             isProximo = true;
                         }
@@ -577,7 +611,7 @@
                 dadosRaw.push({ 
                     codigo, diasRetidos, problema, cidade, 
                     motorista: motorista || "N/D", 
-                    statusIPO, statusTxt, statusClass, infoDevolucao, isProximo 
+                    statusIPO, statusTxt, statusClass, infoDevolucao, isProximo, isNaBase 
                 });
             }
 
@@ -604,6 +638,7 @@
             const busca = document.getElementById('buscaGeral').value.toLowerCase();
             const cid = document.getElementById('filtroCidade').value;
             const stat = document.getElementById('filtroStatus').value;
+            const local = document.getElementById('filtroLocal').value; // FILTRO DE LOCALIZAÇÃO FÍSICA
             
             const vDias = document.getElementById('valorDias').value;
             const opDias = document.getElementById('operadorDias').value;
@@ -612,7 +647,6 @@
 
             dadosFiltrados = dadosRaw.filter(d => {
                 
-                // NOVA LÓGICA DE FILTRO (Permite ver Vencendo Amanhã)
                 let okCheckbox = false;
                 if (chkAtivos.includes(d.statusIPO)) okCheckbox = true;
                 if (d.statusIPO === "CHECK_VERIFY" && chkAtivos.includes("INVALID")) okCheckbox = true;
@@ -624,6 +658,10 @@
                 const matchCid = cid === "" || d.cidade === cid;
                 const matchStat = stat === "" || d.statusTxt === stat;
 
+                let matchLocal = true;
+                if (local === "BASE") matchLocal = d.isNaBase;
+                if (local === "MOTOBOY") matchLocal = !d.isNaBase;
+
                 let matchDias = true;
                 if (vDias !== "") {
                     const val = parseInt(vDias);
@@ -632,7 +670,7 @@
                     else if (opDias === 'igual') matchDias = d.diasRetidos === val;
                 }
 
-                return matchBusca && matchCid && matchStat && matchDias;
+                return matchBusca && matchCid && matchStat && matchLocal && matchDias;
             });
 
             atualizarKPIs();
@@ -646,7 +684,7 @@
             
             setK('kpiImpressa', d => d.statusIPO === 'IMPRESSA');
             setK('kpiApto', d => d.statusIPO === 'APTO');
-            setK('kpiProximo', d => d.isProximo); // NOVO KPI
+            setK('kpiProximo', d => d.isProximo); 
             setK('kpiAtivo', d => d.statusIPO === 'FAZER_ATIVO');
             setK('kpiWait', d => d.statusIPO === 'WAIT');
             setK('kpiAusencia', d => d.statusIPO === 'AUSENCIA');
@@ -660,10 +698,23 @@
                 const tr = document.createElement('tr');
                 let infoHTML = r.infoDevolucao !== "-" ? `<span class="info-pill">${r.infoDevolucao}</span>` : "-";
                 
+                // CRIAÇÃO DA ETIQUETINHA DE ALERTA DE BASE PARA PACOTES APTOS/IMPRESSOS
+                let badgeBase = "";
+                if (r.statusIPO === "APTO" || r.statusIPO === "IMPRESSA") {
+                    if (r.isNaBase) {
+                        badgeBase = `<span class="badge" style="background-color:#17a2b8; margin-top:4px; display:inline-block; font-size:9px;">🏣 NA BASE</span>`;
+                    } else {
+                        badgeBase = `<span class="badge" style="background-color:#dc3545; margin-top:4px; display:inline-block; font-size:9px;">⚠️ FALTA RETORNO</span>`;
+                    }
+                }
+                
                 tr.innerHTML = `
                     <td><strong>${r.codigo}</strong></td>
                     <td style="text-align:center;">${r.diasRetidos}</td>
-                    <td><span class="badge ${r.statusClass}">${r.statusTxt}</span></td>
+                    <td>
+                        <span class="badge ${r.statusClass}">${r.statusTxt}</span><br>
+                        ${badgeBase}
+                    </td>
                     <td>${infoHTML}</td>
                     <td style="font-size: 11px;">${r.problema}</td>
                     <td>${r.motorista}</td>
@@ -730,6 +781,7 @@
                 "Pedido / Remessa": d.codigo, 
                 "Dias Retidos": d.diasRetidos, 
                 "Status/Regra": d.statusTxt, 
+                "Localização": d.isNaBase ? "Na Base" : "Com Motoboy",
                 "Info Liberação/Tentativas": d.infoDevolucao,
                 "Motivo Problemático": d.problema, 
                 "Motorista": d.motorista, 
@@ -738,7 +790,7 @@
             const ws = XLSX.utils.json_to_sheet(dt);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Painel_Operacional");
-            XLSX.writeFile(wb, "Dashboard_Logistica_V8.xlsx");
+            XLSX.writeFile(wb, "Dashboard_Logistica_V10.xlsx");
         }
     </script>
 </body>
