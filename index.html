@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard J&T - Pacotes Retidos (V11 - Gráficos e Macros)</title>
+    <title>Dashboard J&T - Pacotes Retidos (V15 - Suporte Multi-formato JMS/Feishu)</title>
     
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
@@ -31,8 +32,13 @@
             background: linear-gradient(135deg, #1e3c72, #2a5298);
             color: white; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        header h1 { font-size: 22px; display: flex; align-items: center; gap: 10px; }
+        header h1 { font-size: 22px; display: flex; align-items: center; gap: 10px; margin: 0; }
         header p { font-size: 13px; opacity: 0.9; margin-top: 5px; }
+
+        /* NOVO UX: Chip de Formato */
+        .chip-formato { padding: 4px 12px; border-radius: 15px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px; border: 1px solid transparent; }
+        .chip-jms { background: #e8eaf6; color: #283593; border-color: #c5cae9; }
+        .chip-feishu { background: #e0f2f1; color: #00695c; border-color: #b2dfdb; }
 
         .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
 
@@ -53,8 +59,7 @@
             padding: 15px; border-radius: 6px; margin-bottom: 20px; display: none;
         }
 
-        /* KPIs */
-        .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        /* KPIs Base */
         .kpi-card { background: white; padding: 15px; border-radius: 6px; border-left: 5px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .kpi-card h3 { font-size: 10px; text-transform: uppercase; color: #777; margin-bottom: 5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .kpi-card .value { font-size: 22px; font-weight: 800; color: #333; }
@@ -66,24 +71,44 @@
         .border-warning { border-left-color: var(--warning); }
         .border-info { border-left-color: var(--info); }
         .border-dark { border-left-color: var(--dark); }
-        .border-del { border-left-color: var(--delivered); }
+        .border-gray { border-left-color: #999; }
 
-        /* FILTROS */
-        .filters-bar { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .filter-item { display: flex; flex-direction: column; gap: 5px; margin-right: 15px; }
-        .filter-item label { font-size: 11px; font-weight: bold; color: #777; }
-        .filter-item input, .filter-item select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 150px; }
+        /* UX: Hierarquia de KPIs */
+        .kpi-tier-1 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .kpi-tier-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 25px; }
         
+        .kpi-card-compact { display: flex; flex-direction: column; justify-content: space-between; }
+        .kpi-split { display: flex; justify-content: space-between; background: rgba(0,0,0,0.03); border-radius: 4px; padding: 8px; margin-top: 10px; }
+        .kpi-split-item { text-align: center; flex: 1; }
+        .kpi-split-item strong { display: block; font-size: 16px; color: #333; }
+        .kpi-split-item span { font-size: 10px; color: #666; text-transform: uppercase; font-weight: bold; }
+        .kpi-split-divider { width: 1px; background: #ddd; margin: 0 10px; }
+
+        .kpi-alert { border: 2px solid #dc3545; box-shadow: 0 4px 12px rgba(220,53,69,0.15); background: #fff5f5; cursor: pointer; transition: 0.2s; }
+        .kpi-alert:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(220,53,69,0.25); }
+        .kpi-alert h3 { color: #c82333 !important; font-size: 13px !important; }
+        .kpi-alert .value { color: #c82333 !important; font-size: 28px !important; }
+        .kpi-microtext { font-size: 9px; color: #c82333; opacity: 0.8; margin-top: 5px; text-transform: uppercase; font-weight: bold;}
+
+        /* UX: Filtros Reorganizados */
+        .filters-wrapper { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
+        .filter-section { background: white; border-radius: 6px; padding: 15px; flex: 1; min-width: 250px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #eee; }
+        .filter-section-title { font-size: 11px; text-transform: uppercase; color: #495057; font-weight: 800; margin-bottom: 12px; border-bottom: 2px solid #f1f3f5; padding-bottom: 5px; display: flex; align-items: center; gap: 5px;}
         .days-input-group { display: flex; gap: 5px; }
-        .days-input-group select { width: 60px; min-width: 0; }
-        .days-input-group input { width: 80px; }
 
-        .checkbox-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .checkbox-item { display: flex; align-items: center; gap: 5px; font-size: 12px; background: #f1f3f5; padding: 5px 10px; border-radius: 15px; cursor: pointer; }
+        .checkbox-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .checkbox-item { display: flex; align-items: center; gap: 5px; font-size: 11px; background: #f1f3f5; padding: 6px 10px; border-radius: 15px; cursor: pointer; font-weight: 600; color: #444; border: 1px solid #e9ecef;}
         .checkbox-item input { width: auto; margin: 0; cursor: pointer; }
+        .checkbox-item:hover { background: #e2e6ea; }
 
-        .main-grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
-        @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+        /* UX: Sidebar Colapsável */
+        .main-grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; transition: grid-template-columns 0.3s ease; }
+        .sidebar-wrapper { width: 320px; transition: all 0.3s ease; overflow: hidden; }
+        .sidebar-wrapper.collapsed { width: 0; opacity: 0; margin: 0; padding: 0; display: none; }
+        @media (max-width: 1100px) { .main-grid { grid-template-columns: 1fr; } .sidebar-wrapper { width: 100%; } }
+
+        .btn-toggle-sidebar { background: #f8f9fa; border: 1px solid #ddd; color: #495057; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+        .btn-toggle-sidebar:hover { background: #e2e6ea; }
 
         .ranking-card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom:20px; height: auto; }
         .ranking-header { font-weight: bold; color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 16px; }
@@ -112,12 +137,25 @@
         .status-fazer-ativo { background-color: var(--ativo); }
         .status-descarte { background-color: #000; color: #fff; }
         .status-impressa { background-color: var(--purple); color: #fff; } 
+        .status-devolvido-dc { background-color: #6c757d; color: #fff; } 
         
         .info-pill { background: #e9ecef; color: #495057; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; white-space: nowrap; border: 1px solid #ced4da; }
 
-        .btn-action { background: #17a2b8; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 5px; font-weight: bold;}
+        /* UX: Badge Erro Gigante */
+        .badge-erro-gigante { background-color: #dc3545; color: white; padding: 6px 10px; border-radius: 4px; font-size: 11px; font-weight: 900; display: inline-block; margin-top: 6px; border: 1px solid #b02a37; box-shadow: 0 2px 4px rgba(220,53,69,0.3); animation: pulse-red 2s infinite;}
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(220,53,69,0.4); } 70% { box-shadow: 0 0 0 6px rgba(220,53,69,0); } 100% { box-shadow: 0 0 0 0 rgba(220,53,69,0); } }
+
+        .btn-action { background: #17a2b8; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 5px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;}
+        .btn-action:hover { opacity: 0.9; }
         .btn-excel { background: #218838; }
-        .btn-macro { background: var(--purple); } /* Botão Especial de Macro */
+        .btn-macro { background: var(--purple); }
+        .btn-cobranca { background: #007bff; }
+
+        /* Modal Cobrança */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
+        .modal-content { background: white; padding: 25px; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
+        .modal-content h3 { margin-bottom: 15px; color: #333; }
+        .modal-content textarea { width: 100%; resize: vertical; padding: 10px; font-family: monospace; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; background: #f8f9fa; }
 
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--secondary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
@@ -133,10 +171,32 @@
         <p style="color:#666; font-size:12px;">Gerando gráficos e preparando macros operacionais</p>
     </div>
 
+    <div id="modalCobranca" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="modalCobrancaTitulo">Cobrança Automática</h3>
+            
+            <div id="cobrancaControles" style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
+                <label id="lblSelectCobranca" style="font-weight: bold; font-size: 12px; text-transform: uppercase; color: #555;">Selecione:</label>
+                <select id="selectCobranca" onchange="gerarTextoCobrancaSelecionada()" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; background: #fff;"></select>
+                <div id="cobrancaStats" style="font-size: 12px; color: #495057; font-weight: bold; background: #e2e3e5; padding: 8px 12px; border-radius: 4px; border: 1px solid #d6d8db; display: none;"></div>
+            </div>
+
+            <textarea id="modalCobrancaTexto" rows="12" placeholder="Selecione uma opção acima para gerar a cobrança..." readonly></textarea>
+            
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:15px;">
+                <button class="btn-action" style="background:#6c757d;" onclick="fecharModalCobranca()"><i class="fa-solid fa-times"></i> Fechar</button>
+                <button class="btn-action btn-excel" onclick="copiarTextoModal()"><i class="fa-solid fa-copy"></i> Copiar Texto</button>
+            </div>
+        </div>
+    </div>
+
     <header>
         <div class="container" style="padding: 0;">
-            <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - Retidos (V11)</h1>
-            <p>Com Curva de Vencimento e Macro de Cópia Rápida para devolução na J&T.</p>
+            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <h1><i class="fa-solid fa-boxes-packing"></i> Dashboard J&T - Retidos (V15)</h1>
+                <span id="chipFormato" class="chip-formato hidden"></span>
+            </div>
+            <p>Painel de Ação Operacional, Curva de Vencimento, Devolução DC e Macros de Cobrança Específica.</p>
         </div>
     </header>
 
@@ -163,6 +223,10 @@
                 <label>5. Retorno à Base (Col. A)</label>
                 <input type="file" id="fileRetorno" accept=".csv, .xlsx, .xls">
             </div>
+            <div class="input-group">
+                <label>6. Devolvidos ao DC (Col. A)</label>
+                <input type="file" id="fileDevolvidosDC" accept=".csv, .xlsx, .xls">
+            </div>
             <button class="btn-main" onclick="tratarClickCarregar()">
                 <i class="fa-solid fa-play"></i> Processar
             </button>
@@ -171,71 +235,114 @@
         <div id="msgErro"></div>
 
         <div id="tabOps">
-            <div class="filters-bar" style="flex-direction:column; align-items:flex-start;">
-                <div style="display:flex; width:100%; gap:15px; margin-bottom:15px; flex-wrap:wrap;">
-                    <div class="filter-item" style="flex: 1;"><label>Busca Rápida</label><input type="text" id="buscaGeral" placeholder="Pedido ou Motorista..." onkeyup="aplicarFiltros()"></div>
-                    <div class="filter-item"><label>Dias Retidos</label>
-                        <div class="days-input-group">
-                            <select id="operadorDias" onchange="aplicarFiltros()"><option value="maior">></option><option value="menor"><</option><option value="igual">=</option></select>
-                            <input type="number" id="valorDias" placeholder="Ex: 8" onkeyup="aplicarFiltros()">
-                        </div>
+            
+            <div class="filters-wrapper">
+                <div class="filter-section">
+                    <div class="filter-section-title"><i class="fa-solid fa-magnifying-glass"></i> Buscar</div>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <input type="text" id="buscaGeral" placeholder="Pedido ou Motorista..." onkeyup="aplicarFiltros()" style="padding:8px; border:1px solid #ddd; border-radius:4px; width:100%;">
+                        <select id="filtroCidade" onchange="aplicarFiltros()" style="padding:8px; border:1px solid #ddd; border-radius:4px; width:100%;"><option value="">Todas as Cidades</option></select>
+                        <select id="filtroStatus" onchange="aplicarFiltros()" style="padding:8px; border:1px solid #ddd; border-radius:4px; width:100%;"><option value="">Todos os Status</option></select>
                     </div>
-                    <div class="filter-item" style="flex: 1;"><label>Cidade Destino</label><select id="filtroCidade" onchange="aplicarFiltros()"><option value="">Todas</option></select></div>
-                    <div class="filter-item" style="flex: 1;"><label>Status / Regra</label><select id="filtroStatus" onchange="aplicarFiltros()"><option value="">Todos</option></select></div>
-                    <div class="filter-item" style="flex: 1;"><label>Localização (Físico)</label>
-                        <select id="filtroLocal" onchange="aplicarFiltros()">
-                            <option value="">Todos (Base + Motoboy)</option>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-section-title"><i class="fa-solid fa-filter"></i> Cortes Operacionais</div>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <div class="days-input-group" style="display:flex; gap:5px; width:100%;">
+                            <select id="operadorDias" onchange="aplicarFiltros()" style="padding:8px; border:1px solid #ddd; border-radius:4px; width: 60px;"><option value="maior">></option><option value="menor"><</option><option value="igual">=</option></select>
+                            <input type="number" id="valorDias" placeholder="Dias retidos (Ex: 8)" onkeyup="aplicarFiltros()" style="padding:8px; border:1px solid #ddd; border-radius:4px; flex:1;">
+                        </div>
+                        <select id="filtroLocal" onchange="aplicarFiltros()" style="padding:8px; border:1px solid #ddd; border-radius:4px; width:100%;">
+                            <option value="">Físico: Base + Motorista</option>
                             <option value="BASE">🏣 Somente Na Base</option>
-                            <option value="MOTOBOY">⚠️ Com Motoboy</option>
+                            <option value="MOTORISTA">⚠️ Com Motorista</option>
                         </select>
                     </div>
                 </div>
-                <div class="filter-item" style="width:100%;">
-                    <label style="margin-bottom:8px; display:block;">Filtrar Grupos Rápidos:</label>
+
+                <div class="filter-section" style="flex: 2;">
+                    <div class="filter-section-title"><i class="fa-solid fa-bolt"></i> Atalhos Rápidos (Filtros)</div>
                     <div class="checkbox-group">
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="DELIVERED"> 🟢 Entregues</label>
-                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="IMPRESSA"> 🖨️ Etiq. Impressas</label>
-                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="APTO"> 🟢 Aptos Devolução</label>
-                        <label class="checkbox-item" style="background:#fff3cd; color:#856404; border:1px solid #ffeeba;"><input type="checkbox" checked onchange="aplicarFiltros()" value="PROXIMO"> ⏳ Vencendo Amanhã</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="APTO"> 🟢 Aptos</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="IMPRESSA"> 🖨️ Impressas</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="PRONTO_BASE"> 🏣 Pronto Base</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="PRONTO_MOTORISTA"> 🏍️ Pronto C/ Motor.</label>
+                        <label class="checkbox-item" style="background:#fff3cd; color:#856404; border-color:#ffeeba;"><input type="checkbox" checked onchange="aplicarFiltros()" value="PROXIMO"> ⏳ Vencendo Amanhã</label>
+                        <label class="checkbox-item" style="background:#f8d7da; color:#721c24; border-color:#f5c6cb;"><input type="checkbox" checked onchange="aplicarFiltros()" value="INCORRETOS"> 🚨 Erros</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="WAIT"> 🔴 Aguardando</label>
-                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="AUSENCIA"> 🔵 Proc. Ausência</label>
+                        <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="AUSENCIA"> 🔵 Ausência</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="FAZER_ATIVO"> 🩷 Fazer Ativo</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="VERIFY_DRIVER"> ⚫ Verif. Motorista</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="INVALID"> 🟠 Inválida</label>
                         <label class="checkbox-item"><input type="checkbox" checked onchange="aplicarFiltros()" value="FINALIZADO"> ⬛ Descarte</label>
+                        <label class="checkbox-item" style="background:#e2e3e5; color:#383d41;"><input type="checkbox" checked onchange="aplicarFiltros()" value="DEVOLVIDO_DC"> 📦 Devolvido DC</label>
                     </div>
                 </div>
             </div>
 
-            <div class="kpi-row">
-                <div class="kpi-card border-gray"><h3>Total</h3><div class="value" id="kpiTotal">0</div></div>
-                <div class="kpi-card border-purple"><h3>Etiq. Impressas</h3><div class="value" id="kpiImpressa">0</div></div>
-                <div class="kpi-card border-green"><h3>Aptos (Liberados)</h3><div class="value" id="kpiApto">0</div></div>
-                <div class="kpi-card border-warning"><h3>Vencendo (D-1)</h3><div class="value" id="kpiProximo">0</div></div>
-                <div class="kpi-card border-ativo"><h3>Fazer Ativo</h3><div class="value" id="kpiAtivo">0</div></div>
-                <div class="kpi-card border-red"><h3>Aguardando (8D)</h3><div class="value" id="kpiWait">0</div></div>
-                <div class="kpi-card border-info"><h3>Ausências Pend.</h3><div class="value" id="kpiAusencia">0</div></div>
-                <div class="kpi-card border-dark"><h3>Verif. Motorista</h3><div class="value" id="kpiDriver">0</div></div>
+            <div class="kpi-tier-1">
+                <div class="kpi-card kpi-card-compact border-green" style="background:#f4fcf5;">
+                    <h3>Pronto para Devolução (Apto/Impresso)</h3>
+                    <div class="value" id="kpiProntoTotal" style="color:#28a745;">0</div>
+                    <div class="kpi-split">
+                        <div class="kpi-split-item"><strong id="kpiProntoBase" style="color:#17a2b8;">0</strong><span>Na Base</span></div>
+                        <div class="kpi-split-divider"></div>
+                        <div class="kpi-split-item"><strong id="kpiProntoMotorista" style="color:#fd7e14;">0</strong><span>C/ Motorista</span></div>
+                    </div>
+                </div>
+
+                <div class="kpi-card border-warning kpi-alert" style="border-color:#ffc107;" onclick="filtrarKpi('PROXIMO')">
+                    <h3 style="color:#856404 !important;">Fila de Amanhã</h3>
+                    <div class="value" id="kpiDevolucaoAmanha" style="color:#856404 !important;">0</div>
+                    <div class="kpi-microtext" style="color:#856404;">▸ Clique para filtrar pacotes</div>
+                </div>
+
+                <div class="kpi-card kpi-alert" onclick="filtrarKpi('INCORRETOS')">
+                    <h3>🚨 Tratativa Incorreta</h3>
+                    <div class="value" id="kpiIncorretos">0</div>
+                    <div class="kpi-microtext">▸ Clique para isolar erros</div>
+                </div>
             </div>
 
-            <div class="main-grid">
-                <div class="sidebar">
-                    <div class="ranking-card">
-                        <div class="ranking-header">📈 Curva de Vencimento (Próximos Dias)</div>
-                        <canvas id="graficoVencimento" width="100" height="70"></canvas>
-                    </div>
+            <div class="kpi-tier-2">
+                <div class="kpi-card border-gray"><h3>Total Geral</h3><div class="value" id="kpiTotal" style="font-size:16px;">0</div></div>
+                <div class="kpi-card border-red"><h3>Aguardando (8D)</h3><div class="value" id="kpiWait" style="font-size:16px;">0</div></div>
+                <div class="kpi-card border-info"><h3>Ausências Pend.</h3><div class="value" id="kpiAusencia" style="font-size:16px;">0</div></div>
+                <div class="kpi-card border-dark"><h3>Verif. Motorista</h3><div class="value" id="kpiDriver" style="font-size:16px;">0</div></div>
+                <div class="kpi-card border-ativo"><h3>Fazer Ativo</h3><div class="value" id="kpiAtivo" style="font-size:16px;">0</div></div>
+                <div class="kpi-card border-purple"><h3>Etiq. Impressa</h3><div class="value" id="kpiImpressa" style="font-size:16px;">0</div></div>
+                <div class="kpi-card border-gray" style="background:#f8f9fa;"><h3>Devolvidos DC</h3><div class="value" id="kpiDevolvidosDC" style="font-size:16px; color:#6c757d;">0</div></div>
+            </div>
 
-                    <div class="ranking-card"><div class="ranking-header">Top Cidades Problemáticas</div><div id="listaTopCidades"></div></div>
-                    <div class="ranking-card"><div class="ranking-header">Top Motoristas (Pendentes)</div><div id="listaTopMotoristas"></div></div>
+            <div style="margin-bottom: 15px; display: flex; justify-content: flex-end;">
+                <button id="btnToggleSidebar" class="btn-toggle-sidebar" onclick="toggleSidebar()">
+                    <i class="fa-solid fa-chart-pie"></i> Ocultar Insights ◂
+                </button>
+            </div>
+
+            <div class="main-grid" id="mainGridContainer">
+                <div class="sidebar-wrapper" id="sidebarWrapper">
+                    <div class="sidebar">
+                        <div class="ranking-card">
+                            <div class="ranking-header">📈 Curva de Vencimento</div>
+                            <canvas id="graficoVencimento" width="100" height="70"></canvas>
+                        </div>
+                        <div class="ranking-card"><div class="ranking-header">Top Cidades Problemáticas</div><div id="listaTopCidades"></div></div>
+                        <div class="ranking-card"><div class="ranking-header">Top Motoristas (Pendentes)</div><div id="listaTopMotoristas"></div></div>
+                    </div>
                 </div>
                 
                 <div class="table-container">
                     <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                         <h3>Listagem de Pacotes</h3>
                         <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                            <button class="btn-action" onclick="copiarCodigos()"><i class="fa-regular fa-copy"></i> Copiar Tudo Filtrado</button>
+                            <button class="btn-action" onclick="copiarCodigos()"><i class="fa-regular fa-copy"></i> Copiar Tudo</button>
                             <button class="btn-action btn-macro" onclick="copiarAptosBase()"><i class="fa-solid fa-clipboard-check"></i> Copiar APTOS na BASE</button>
-                            <button class="btn-action btn-excel" onclick="exportarExcel()"><i class="fa-solid fa-file-excel"></i> Exportar Dados</button>
+                            <button class="btn-action btn-cobranca" onclick="abrirModalCobranca('motorista')"><i class="fa-solid fa-user-clock"></i> Cobrar Motorista</button>
+                            <button class="btn-action btn-cobranca" onclick="abrirModalCobranca('cidade')"><i class="fa-solid fa-city"></i> Cobrar Cidade</button>
+                            <button class="btn-action btn-excel" onclick="exportarExcel()"><i class="fa-solid fa-file-excel"></i> Exportar</button>
                         </div>
                     </div>
                     <table id="tabelaDados">
@@ -259,11 +366,50 @@
     </div>
 
     <script>
+        const MIN_DIAS_INCORRETO = 3;
+        const X_PARADO = 2;
+        const IGNORAR_FINALIZADOS_NA_COBRANCA = true;
+
+        const isPronto = d => d.statusIPO === 'APTO' || d.statusIPO === 'IMPRESSA';
+        const isProntoBase = d => isPronto(d) && d.isNaBase;
+        const isProntoMotorista = d => isPronto(d) && !d.isNaBase;
+
+        function filtrarKpi(valorCheckbox) {
+            const checkboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+            const target = document.querySelector(`.checkbox-group input[value="${valorCheckbox}"]`);
+            if (target) target.checked = true;
+            aplicarFiltros();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebarWrapper');
+            const btn = document.getElementById('btnToggleSidebar');
+            const grid = document.getElementById('mainGridContainer');
+            
+            sidebar.classList.toggle('collapsed');
+            
+            if (sidebar.classList.contains('collapsed')) {
+                btn.innerHTML = '<i class="fa-solid fa-chart-pie"></i> Insights ▸';
+                grid.style.gridTemplateColumns = "1fr";
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-chart-pie"></i> Ocultar Insights ◂';
+                grid.style.gridTemplateColumns = "320px 1fr";
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.innerWidth <= 1100) {
+                toggleSidebar();
+            }
+        });
+
         let dadosRaw = [];
         let dadosFiltrados = [];
         let sortCol = '';
         let sortDir = 'asc';
-        let myChart = null; // Variável global para o gráfico
+        let myChart = null; 
+        let modoCobrancaAtual = ''; 
 
         function lerArquivo(arquivo) {
             return new Promise((resolve, reject) => {
@@ -355,6 +501,7 @@
             const fProb = document.getElementById('fileProb').files[0];
             const fEtiqueta = document.getElementById('fileEtiqueta').files[0];
             const fRetorno = document.getElementById('fileRetorno').files[0]; 
+            const fDevolvidosDC = document.getElementById('fileDevolvidosDC').files[0]; 
 
             const divErro = document.getElementById('msgErro');
             divErro.style.display = 'none'; divErro.innerHTML = '';
@@ -373,8 +520,9 @@
                     const prob = fProb ? await lerArquivo(fProb) : null;
                     const etiqueta = fEtiqueta ? await lerArquivo(fEtiqueta) : null;
                     const retorno = fRetorno ? await lerArquivo(fRetorno) : null;
+                    const devolvidos = fDevolvidosDC ? await lerArquivo(fDevolvidosDC) : null;
                     
-                    processarLogica(retidos, base, prob, etiqueta, retorno);
+                    processarLogica(retidos, base, prob, etiqueta, retorno, devolvidos);
                 } catch (error) {
                     divErro.style.display = 'block'; divErro.innerHTML = "Erro: " + error.message;
                 } finally {
@@ -383,19 +531,37 @@
             }, 300);
         }
 
-        function processarLogica(retidos, base, prob, etiqueta, retorno) {
+        function processarLogica(retidos, base, prob, etiqueta, retorno, devolvidos) {
             dadosRaw = [];
+
+            // DETECÇÃO DE FORMATO JMS vs FEISHU
+            let headersRetidos = retidos[0] || [];
+            let isJMS = headersRetidos.some(h => {
+                let ht = String(h).toLowerCase();
+                return ht.includes("jms") || ht.includes("运单号") || ht.includes("滞留日") || ht.includes("订单来源");
+            });
+
+            const chip = document.getElementById('chipFormato');
+            chip.classList.remove('hidden');
+            if (isJMS) {
+                chip.innerHTML = '<i class="fa-solid fa-file-invoice"></i> Formato detectado: Informações JMS';
+                chip.className = 'chip-formato chip-jms';
+            } else {
+                chip.innerHTML = '<i class="fa-solid fa-file-csv"></i> Formato detectado: Informações Feishu';
+                chip.className = 'chip-formato chip-feishu';
+            }
             
             let colRet = detectarColunas(retidos, {
-                pedido: ["remessa", "pedido", "número de pedido"],
-                previsao: ["prevista", "data prevista"],
+                pedido: ["remessa", "pedido", "número de pedido", "número do pedido jms", "运单号"],
+                previsao: ["prevista", "data prevista", "previsao", "data prevista de entrega", "规划签收时间"],
                 motorista: ["digitalizador de saída", "digitalizador", "motorista"],
-                problema: ["tipo problemático", "problema"],
-                origem: ["origem do pedido", "origem", "plataforma"] 
+                problema: ["tipo problemático", "problema", "processo retido", "分析"],
+                origem: ["origem do pedido", "origem", "plataforma", "origem de pedido", "订单来源"],
+                diasRetidosPronto: ["dias retidos", "滞留日"]
             });
-            if(colRet.pedido===-1) colRet.pedido=0; if(colRet.previsao===-1) colRet.previsao=10;
-            if(colRet.motorista===-1) colRet.motorista=13; if(colRet.problema===-1) colRet.problema=17;
-            if(colRet.origem===-1) colRet.origem=15; 
+            
+            // Fallback seguro caso 'pedido' não seja detectado no index normal
+            if(colRet.pedido === -1) colRet.pedido = 0;
 
             let colBase = base ? detectarColunas(base, {
                 remessa: ["número de pedido", "pedido", "remessa"],
@@ -484,20 +650,30 @@
                 }
             }
 
+            const setDevolvidosDC = new Set();
+            if(devolvidos) {
+                let colDev = detectarColunas(devolvidos, { codigo: ["número", "pedido", "remessa", "pacote", "código"] });
+                let idxCodDev = colDev.codigo !== -1 ? colDev.codigo : 0; 
+                for(let i = 1; i < devolvidos.length; i++) {
+                    if(!devolvidos[i] || !devolvidos[i][idxCodDev]) continue;
+                    setDevolvidosDC.add(limparCodigo(devolvidos[i][idxCodDev]));
+                }
+            }
+
             const agora = new Date(); 
             const amanha = new Date(agora.getTime() + 24 * 60 * 60 * 1000); 
             const hojeZered = new Date(); hojeZered.setHours(0,0,0,0);
 
             for(let i = 1; i < retidos.length; i++) {
                 const linha = retidos[i];
-                if (!linha || !linha[colRet.pedido]) continue;
+                if (!linha || linha[colRet.pedido] === undefined) continue;
 
                 const codigo = limparCodigo(linha[colRet.pedido]);
-                if (codigo === "REMESSA" || codigo.includes("PEDIDO") || codigo.includes("NÚMERO")) continue;
+                if (!codigo || codigo === "REMESSA" || codigo.includes("PEDIDO") || codigo.includes("NÚMERO") || codigo.includes("运单号")) continue;
 
-                let motorista = linha[colRet.motorista] || "";
-                let problema = linha[colRet.problema] || "";
-                let origemPlatform = linha[colRet.origem] || ""; 
+                let motorista = (colRet.motorista !== -1 && linha[colRet.motorista]) ? linha[colRet.motorista] : "";
+                let problema = (colRet.problema !== -1 && linha[colRet.problema]) ? linha[colRet.problema] : "";
+                let origemPlatform = (colRet.origem !== -1 && linha[colRet.origem]) ? linha[colRet.origem] : ""; 
                 let cidade = "N/D";
                 let entregue = false;
                 let isProximo = false; 
@@ -517,9 +693,23 @@
                     problema = matchProb.ultimoMotivo;
                 }
 
-                let previsaoData = tratarDataRobustamente(linha[colRet.previsao]);
                 let diasRetidos = 0;
-                if(previsaoData) {
+                let achouDiasPronto = false;
+
+                if (colRet.diasRetidosPronto !== -1) {
+                    let val = linha[colRet.diasRetidosPronto];
+                    if (val !== undefined && val !== null && !isNaN(parseInt(val))) {
+                        diasRetidos = parseInt(val);
+                        achouDiasPronto = true;
+                    }
+                }
+
+                let previsaoData = null;
+                if (colRet.previsao !== -1) {
+                    previsaoData = tratarDataRobustamente(linha[colRet.previsao]);
+                }
+
+                if (!achouDiasPronto && previsaoData) {
                     let prevZerada = new Date(previsaoData); prevZerada.setHours(0,0,0,0);
                     diasRetidos = Math.floor((hojeZered - prevZerada) / 86400000);
                     if (diasRetidos < 0) diasRetidos = 0; 
@@ -527,7 +717,7 @@
 
                 let statusIPO = ""; let statusTxt = ""; let statusClass = "";
                 let infoDevolucao = "-";
-                let objDataLibExata = null; // Guardará o Date exato de liberação para o gráfico
+                let objDataLibExata = null; 
 
                 const pLow = String(problema).toLowerCase();
                 const isTikTok = String(origemPlatform).toLowerCase().replace(/\s/g, '').includes("tiktok");
@@ -572,7 +762,7 @@
                         if (dataDoProblema) {
                             let dataLib = new Date(dataDoProblema.getTime());
                             dataLib.setDate(dataLib.getDate() + 8); 
-                            objDataLibExata = dataLib; // Guarda pra renderizar o gráfico
+                            objDataLibExata = dataLib; 
                             
                             infoDevolucao = `Liberar: ${formatarDataBR(dataLib)}`;
                             
@@ -617,10 +807,41 @@
                     }
                 }
 
+                let tratativaIncorreta = false;
+                let motivoTratativaIncorreta = "";
+                
+                let qtdTentativasParaErro = matchProb ? matchProb.ausencias.size : 1;
+                if(qtdTentativasParaErro === 0) qtdTentativasParaErro = 1;
+
+                if (diasRetidos >= MIN_DIAS_INCORRETO && semProb) {
+                    tratativaIncorreta = true;
+                    motivoTratativaIncorreta = 'SEM PROBLEMÁTICO LANÇADO (>=3 DIAS)';
+                } else if (diasRetidos >= MIN_DIAS_INCORRETO && statusIPO === 'AUSENCIA' && qtdTentativasParaErro <= 1) {
+                    tratativaIncorreta = true;
+                    motivoTratativaIncorreta = 'AUSÊNCIA POUCAS BAIXAS P/ TEMPO RETIDO';
+                } else if (statusIPO === 'WAIT' && !objDataLibExata) {
+                    tratativaIncorreta = true;
+                    motivoTratativaIncorreta = 'WAIT SEM DATA REF';
+                } else if ((statusIPO === 'APTO' || statusIPO === 'IMPRESSA') && !isNaBase && diasRetidos >= X_PARADO) {
+                    tratativaIncorreta = true;
+                    motivoTratativaIncorreta = 'PRONTO COM MOTORISTA PARADO';
+                }
+
+                if (setDevolvidosDC.has(codigo)) {
+                    statusIPO = "DEVOLVIDO_DC";
+                    statusTxt = "DEVOLVIDO AO DC";
+                    statusClass = "status-devolvido-dc";
+                    tratativaIncorreta = false;
+                    motivoTratativaIncorreta = "";
+                    isProximo = false;
+                    infoDevolucao = "Baixado no DC";
+                }
+
                 dadosRaw.push({ 
                     codigo, diasRetidos, problema, cidade, 
                     motorista: motorista || "N/D", 
-                    statusIPO, statusTxt, statusClass, infoDevolucao, isProximo, isNaBase, objDataLibExata
+                    statusIPO, statusTxt, statusClass, infoDevolucao, isProximo, isNaBase, objDataLibExata,
+                    tratativaIncorreta, motivoTratativaIncorreta 
                 });
             }
 
@@ -636,8 +857,8 @@
             const selCid = document.getElementById('filtroCidade');
             const selStat = document.getElementById('filtroStatus');
             
-            selCid.innerHTML = '<option value="">Todas</option>';
-            selStat.innerHTML = '<option value="">Todos</option>';
+            selCid.innerHTML = '<option value="">Todas as Cidades</option>';
+            selStat.innerHTML = '<option value="">Todos os Status</option>';
             
             cidades.forEach(c => selCid.innerHTML += `<option value="${c}">${c}</option>`);
             statusSet.forEach(s => selStat.innerHTML += `<option value="${s}">${s}</option>`);
@@ -661,6 +882,12 @@
                 if (d.statusIPO === "CHECK_VERIFY" && chkAtivos.includes("INVALID")) okCheckbox = true;
                 if (d.isProximo && chkAtivos.includes("PROXIMO")) okCheckbox = true;
 
+                if (chkAtivos.includes("PRONTO_BASE") && isProntoBase(d)) okCheckbox = true;
+                if (chkAtivos.includes("PRONTO_MOTORISTA") && isProntoMotorista(d)) okCheckbox = true;
+                if (chkAtivos.includes("INCORRETOS") && d.tratativaIncorreta) okCheckbox = true;
+
+                if (chkAtivos.length === 0) okCheckbox = true;
+
                 if (!okCheckbox) return false;
 
                 const matchBusca = d.codigo.toLowerCase().includes(busca) || String(d.motorista).toLowerCase().includes(busca);
@@ -669,7 +896,7 @@
 
                 let matchLocal = true;
                 if (local === "BASE") matchLocal = d.isNaBase;
-                if (local === "MOTOBOY") matchLocal = !d.isNaBase;
+                if (local === "MOTORISTA") matchLocal = !d.isNaBase;
 
                 let matchDias = true;
                 if (vDias !== "") {
@@ -685,23 +912,31 @@
             atualizarKPIs();
             renderTabela();
             renderTopLists();
-            renderGraficoVencimento(); // ATUALIZA O GRÁFICO DE BARRAS
+            renderGraficoVencimento(); 
         }
 
         function atualizarKPIs() {
-            const setK = (id, fn) => document.getElementById(id).innerText = dadosFiltrados.filter(fn).length;
+            const setK = (id, fn) => { 
+                const el = document.getElementById(id); 
+                if(el) el.innerText = dadosFiltrados.filter(fn).length; 
+            };
+            
             document.getElementById('kpiTotal').innerText = dadosFiltrados.length;
             
-            setK('kpiImpressa', d => d.statusIPO === 'IMPRESSA');
-            setK('kpiApto', d => d.statusIPO === 'APTO');
-            setK('kpiProximo', d => d.isProximo); 
+            setK('kpiProntoTotal', isPronto);
+            setK('kpiProntoBase', isProntoBase);
+            setK('kpiProntoMotorista', isProntoMotorista);
+            setK('kpiDevolucaoAmanha', d => d.isProximo);
+            setK('kpiIncorretos', d => d.tratativaIncorreta);
+
             setK('kpiAtivo', d => d.statusIPO === 'FAZER_ATIVO');
             setK('kpiWait', d => d.statusIPO === 'WAIT');
             setK('kpiAusencia', d => d.statusIPO === 'AUSENCIA');
             setK('kpiDriver', d => d.statusIPO === 'VERIFY_DRIVER');
+            setK('kpiImpressa', d => d.statusIPO === 'IMPRESSA');
+            setK('kpiDevolvidosDC', d => d.statusIPO === 'DEVOLVIDO_DC'); 
         }
 
-        // NOVA FUNÇÃO: RENDERIZAR O GRÁFICO DE CURVA DE VENCIMENTO
         function renderGraficoVencimento() {
             const ctx = document.getElementById('graficoVencimento');
             if(!ctx) return;
@@ -711,7 +946,6 @@
             hojeZered.setHours(0,0,0,0);
 
             dadosFiltrados.forEach(d => {
-                // Considera apenas o que está AGUARDANDO prazo de 8 dias para desenhar a curva
                 if (d.statusIPO === 'WAIT' && d.objDataLibExata) {
                     let libZered = new Date(d.objDataLibExata.getTime());
                     libZered.setHours(0,0,0,0);
@@ -726,7 +960,7 @@
                 }
             });
 
-            if (myChart) myChart.destroy(); // Destrói o anterior para não sobrepor
+            if (myChart) myChart.destroy(); 
             
             myChart = new Chart(ctx, {
                 type: 'bar',
@@ -769,12 +1003,17 @@
                     }
                 }
                 
+                let badgeIncorreto = r.tratativaIncorreta 
+                    ? `<br><span class="badge-erro-gigante"><i class="fa-solid fa-triangle-exclamation"></i> ERRO: ${r.motivoTratativaIncorreta}</span>` 
+                    : "";
+                
                 tr.innerHTML = `
                     <td><strong>${r.codigo}</strong></td>
                     <td style="text-align:center;">${r.diasRetidos}</td>
                     <td>
                         <span class="badge ${r.statusClass}">${r.statusTxt}</span><br>
                         ${badgeBase}
+                        ${badgeIncorreto}
                     </td>
                     <td>${infoHTML}</td>
                     <td style="font-size: 11px;">${r.problema}</td>
@@ -790,7 +1029,7 @@
             const countMot = {};
             
             dadosFiltrados.forEach(d => {
-                if(d.statusIPO !== 'DELIVERED') { 
+                if(d.statusIPO !== 'DELIVERED' && d.statusIPO !== 'FINALIZADO' && d.statusIPO !== 'DEVOLVIDO_DC') { 
                     countCidades[d.cidade] = (countCidades[d.cidade] || 0) + 1;
                     if(d.motorista && d.motorista !== "N/D") {
                         countMot[d.motorista] = (countMot[d.motorista] || 0) + 1;
@@ -828,7 +1067,6 @@
             renderTabela();
         }
 
-        // MACRO 1: COPIAR APENAS OS APTOS (OU IMPRESSOS) QUE JÁ ESTÃO NA BASE
         function copiarAptosBase() {
             const aptosNaBase = dadosFiltrados.filter(d => 
                 (d.statusIPO === 'APTO' || d.statusIPO === 'IMPRESSA') && d.isNaBase
@@ -853,13 +1091,147 @@
             alert("Todos os códigos filtrados foram copiados!");
         }
 
+        // --- GERAÇÃO DE TEXTO PARA COBRANÇA (TEMPLATES NEUTROS) ---
+        function getDadosParaCobranca() {
+            if (!IGNORAR_FINALIZADOS_NA_COBRANCA) return dadosFiltrados.filter(d => d.isNaBase === false);
+            const ignorar = ['DELIVERED', 'FINALIZADO', 'DEVOLVIDO_DC'];
+            return dadosFiltrados.filter(d => !ignorar.includes(d.statusIPO) && d.isNaBase === false);
+        }
+
+        function getMensagemCidadeNeutra(cidade, qtd, maxDias) {
+            return `Olá, pessoal. Segue cobrança de pacotes pendentes com motorista da cidade ${cidade}: ${qtd} pacotes (maior retenção ${maxDias} dias). Por favor, verificar e dar retorno/regularizar no sistema. Segue separação por motorista:\n\n`;
+        }
+
+        function getMensagemMotoristaNeutra(motorista, qtd, maxDias) {
+            return `Olá, ${motorista}. Consta ${qtd} pacotes pendentes com você (máx. ${maxDias} dias retido). Preciso do retorno e regularização hoje, por favor:\n`;
+        }
+
+        function abrirModalCobranca(tipo) {
+            modoCobrancaAtual = tipo;
+            const dados = getDadosParaCobranca();
+            
+            document.getElementById('modalCobrancaTitulo').innerText = tipo === 'cidade' ? "Cobrança por Cidade (Pacotes C/ Motorista)" : "Cobrança por Motorista (Pacotes C/ Motorista)";
+            document.getElementById('lblSelectCobranca').innerText = tipo === 'cidade' ? "Selecione a cidade:" : "Selecione o motorista:";
+            
+            const select = document.getElementById('selectCobranca');
+            select.innerHTML = '<option value="">Selecione...</option>';
+            
+            const setUnicos = new Set();
+            dados.forEach(d => {
+                let val = tipo === 'cidade' ? (d.cidade && d.cidade !== "N/D" ? d.cidade : "SEM CIDADE") 
+                                            : (d.motorista && d.motorista !== "N/D" ? d.motorista : "SEM MOTORISTA");
+                setUnicos.add(val);
+            });
+
+            const arrUnicos = Array.from(setUnicos).sort();
+            arrUnicos.forEach(val => {
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.innerText = val;
+                select.appendChild(opt);
+            });
+
+            document.getElementById('modalCobrancaTexto').value = "";
+            document.getElementById('cobrancaStats').style.display = 'none';
+            document.getElementById('modalCobranca').classList.remove('hidden');
+            select.focus();
+        }
+
+        function gerarTextoCobrancaSelecionada() {
+            const select = document.getElementById('selectCobranca');
+            const selecao = select.value;
+            const txtArea = document.getElementById('modalCobrancaTexto');
+            const statsDiv = document.getElementById('cobrancaStats');
+
+            if (!selecao) {
+                txtArea.value = "";
+                statsDiv.style.display = 'none';
+                return;
+            }
+
+            const dadosGlobais = getDadosParaCobranca();
+            let textoFinal = "";
+
+            if (modoCobrancaAtual === 'cidade') {
+                const filtrados = dadosGlobais.filter(d => (d.cidade && d.cidade !== "N/D" ? d.cidade : "SEM CIDADE") === selecao);
+                if (filtrados.length === 0) {
+                    txtArea.value = "Nenhum pacote pendente com motorista encontrado para esta seleção.";
+                    statsDiv.style.display = 'none';
+                    return;
+                }
+
+                const maxDiasCidade = Math.max(...filtrados.map(d => d.diasRetidos));
+                textoFinal += getMensagemCidadeNeutra(selecao, filtrados.length, maxDiasCidade);
+                
+                const mapaMot = new Map();
+                filtrados.forEach(d => {
+                    let mot = d.motorista && d.motorista !== "N/D" ? d.motorista : "SEM MOTORISTA";
+                    if(!mapaMot.has(mot)) mapaMot.set(mot, []);
+                    mapaMot.get(mot).push(d);
+                });
+
+                const arrMot = Array.from(mapaMot.entries()).map(([m, itens]) => {
+                    itens.sort((a,b) => b.diasRetidos - a.diasRetidos);
+                    return { motorista: m, itens: itens, total: itens.length, maxDias: itens[0].diasRetidos };
+                });
+                arrMot.sort((a,b) => b.total - a.total);
+
+                arrMot.forEach(gm => {
+                    textoFinal += getMensagemMotoristaNeutra(gm.motorista, gm.total, gm.maxDias);
+                    gm.itens.forEach(item => {
+                        textoFinal += `${item.codigo} - ${item.diasRetidos} dias retido\n`;
+                    });
+                    textoFinal += `\n`;
+                });
+
+                statsDiv.innerHTML = `Cidade: ${selecao} | Motoristas: ${arrMot.length} | Pacotes C/ Motoristas: ${filtrados.length}`;
+                statsDiv.style.display = 'block';
+
+            } else if (modoCobrancaAtual === 'motorista') {
+                const filtrados = dadosGlobais.filter(d => (d.motorista && d.motorista !== "N/D" ? d.motorista : "SEM MOTORISTA") === selecao);
+                if (filtrados.length === 0) {
+                    txtArea.value = "Nenhum pacote pendente com este motorista encontrado.";
+                    statsDiv.style.display = 'none';
+                    return;
+                }
+                
+                filtrados.sort((a,b) => b.diasRetidos - a.diasRetidos);
+                const maxDiasMot = filtrados[0].diasRetidos;
+
+                textoFinal += getMensagemMotoristaNeutra(selecao, filtrados.length, maxDiasMot);
+                filtrados.forEach(item => {
+                    textoFinal += `${item.codigo} - ${item.diasRetidos} dias retido\n`;
+                });
+
+                statsDiv.innerHTML = `Motorista: ${selecao} | Pacotes C/ Motorista: ${filtrados.length}`;
+                statsDiv.style.display = 'block';
+            }
+
+            txtArea.value = textoFinal.trim();
+        }
+
+        function fecharModalCobranca() {
+            document.getElementById('modalCobranca').classList.add('hidden');
+        }
+
+        function copiarTextoModal() {
+            const txt = document.getElementById('modalCobrancaTexto');
+            if(txt.value.trim() === "" || txt.value.includes("Nenhum pacote")) {
+                alert("Selecione uma opção válida primeiro para gerar o texto.");
+                return;
+            }
+            txt.select();
+            document.execCommand('copy');
+            alert('Texto copiado com sucesso! Agora é só colar no WhatsApp.');
+        }
+
         function exportarExcel() {
             if(dadosFiltrados.length === 0) return;
             const dt = dadosFiltrados.map(d => ({ 
                 "Pedido / Remessa": d.codigo, 
                 "Dias Retidos": d.diasRetidos, 
                 "Status/Regra": d.statusTxt, 
-                "Localização": d.isNaBase ? "Na Base" : "Com Motoboy",
+                "Localização": d.isNaBase ? "Na Base" : "Com Motorista",
                 "Info Liberação/Tentativas": d.infoDevolucao,
                 "Motivo Problemático": d.problema, 
                 "Motorista": d.motorista, 
@@ -868,7 +1240,7 @@
             const ws = XLSX.utils.json_to_sheet(dt);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Painel_Operacional");
-            XLSX.writeFile(wb, "Dashboard_Logistica_V11.xlsx");
+            XLSX.writeFile(wb, "Dashboard_Logistica_V15.xlsx");
         }
     </script>
 </body>
